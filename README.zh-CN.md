@@ -1,6 +1,23 @@
 # 钢琴陪练 · Piano Tutor
 
-[English](README.md) | **中文**
+<p align="center"><a href="README.md">English</a> · <b>中文</b></p>
+
+<div align="center">
+<h3>☕ 请我一杯咖啡</h3>
+<p>项目免费。若它陪孩子练过琴，欢迎用对应网络的 <strong>USDT</strong> 打赏。<br/>
+<sub>请按下面的网络转入，网络不一致会无法入账。</sub></p>
+<p>
+  <img alt="BSC USDT" src="https://img.shields.io/badge/BSC-USDT%20BEP--20-F3BA2F?style=for-the-badge&logo=binance&logoColor=white" />
+  <img alt="Solana USDT" src="https://img.shields.io/badge/Solana-USDT-9945FF?style=for-the-badge&logo=solana&logoColor=white" />
+  <img alt="Tron USDT" src="https://img.shields.io/badge/Tron-USDT%20TRC--20-FF060A?style=for-the-badge&logo=tron&logoColor=white" />
+</p>
+<table>
+  <tr><th align="left">网络</th><th align="left">打赏地址</th></tr>
+  <tr><td><img alt="BSC" src="https://img.shields.io/badge/BSC-F3BA2F?style=flat-square&logo=binance&logoColor=white" /> <strong>USDT · BEP-20</strong></td><td><code>0x6E7359A42C466893E9A835fD6aFdb82E0D1Ed32d</code></td></tr>
+  <tr><td><img alt="Solana" src="https://img.shields.io/badge/Solana-9945FF?style=flat-square&logo=solana&logoColor=white" /> <strong>USDT</strong></td><td><code>Hm7f6wGdvcmLmbcXV7sdLYGJKBdwGoFrJTZPzeN8dpan</code></td></tr>
+  <tr><td><img alt="Tron" src="https://img.shields.io/badge/Tron-FF060A?style=flat-square&logo=tron&logoColor=white" /> <strong>USDT · TRC-20</strong></td><td><code>TGNrpZBqD8jnfNCb7B9W93qMmVHycoFsKJ</code></td></tr>
+</table>
+</div>
 
 一个只跑在自己电脑上的钢琴练琴助手：把老师发的谱子导进来，先听，再跟着弹，弹完让它帮忙找错音。
 
@@ -252,22 +269,3 @@ piano-tutor/
 ├── requirements.txt
 └── requirements-ml.txt
 ```
-
----
-
-<div align="center">
-<h3>☕ 请我一杯咖啡</h3>
-<p>项目免费。若它陪孩子练过琴，欢迎用对应网络的 <strong>USDT</strong> 打赏。<br/>
-<sub>请按下面的网络转入，转账前核对链和网络，网络不一致会无法入账。</sub></p>
-<p>
-  <img alt="BSC USDT" src="https://img.shields.io/badge/BSC-USDT%20BEP--20-F3BA2F?style=for-the-badge&logo=binance&logoColor=white" />
-  <img alt="Solana USDT" src="https://img.shields.io/badge/Solana-USDT-9945FF?style=for-the-badge&logo=solana&logoColor=white" />
-  <img alt="Tron USDT" src="https://img.shields.io/badge/Tron-USDT%20TRC--20-FF060A?style=for-the-badge&logo=tron&logoColor=white" />
-</p>
-</div>
-
-| 网络 | 打赏地址 |
-|:-----|:---------|
-| ![BSC](https://img.shields.io/badge/BSC-F3BA2F?style=flat-square&logo=binance&logoColor=white) **USDT · BEP-20** | `0x6E7359A42C466893E9A835fD6aFdb82E0D1Ed32d` |
-| ![Solana](https://img.shields.io/badge/Solana-9945FF?style=flat-square&logo=solana&logoColor=white) **USDT** | `Hm7f6wGdvcmLmbcXV7sdLYGJKBdwGoFrJTZPzeN8dpan` |
-| ![Tron](https://img.shields.io/badge/Tron-FF060A?style=flat-square&logo=tron&logoColor=white) **USDT · TRC-20** | `TGNrpZBqD8jnfNCb7B9W93qMmVHycoFsKJ` |

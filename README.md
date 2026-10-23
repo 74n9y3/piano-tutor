@@ -1,6 +1,23 @@
 # Piano Tutor · 钢琴陪练
 
-**English** | [中文](README.zh-CN.md)
+<p align="center"><b>English</b> · <a href="README.zh-CN.md">中文</a></p>
+
+<div align="center">
+<h3>☕ Buy me a coffee</h3>
+<p>This app is free. If it has helped a child practice piano, tips in <strong>USDT</strong> on the matching network are welcome.<br/>
+<sub>Send on the network listed below; a mismatched network will not be credited.</sub></p>
+<p>
+  <img alt="BSC USDT" src="https://img.shields.io/badge/BSC-USDT%20BEP--20-F3BA2F?style=for-the-badge&logo=binance&logoColor=white" />
+  <img alt="Solana USDT" src="https://img.shields.io/badge/Solana-USDT-9945FF?style=for-the-badge&logo=solana&logoColor=white" />
+  <img alt="Tron USDT" src="https://img.shields.io/badge/Tron-USDT%20TRC--20-FF060A?style=for-the-badge&logo=tron&logoColor=white" />
+</p>
+<table>
+  <tr><th align="left">Network</th><th align="left">Address</th></tr>
+  <tr><td><img alt="BSC" src="https://img.shields.io/badge/BSC-F3BA2F?style=flat-square&logo=binance&logoColor=white" /> <strong>USDT · BEP-20</strong></td><td><code>0x6E7359A42C466893E9A835fD6aFdb82E0D1Ed32d</code></td></tr>
+  <tr><td><img alt="Solana" src="https://img.shields.io/badge/Solana-9945FF?style=flat-square&logo=solana&logoColor=white" /> <strong>USDT</strong></td><td><code>Hm7f6wGdvcmLmbcXV7sdLYGJKBdwGoFrJTZPzeN8dpan</code></td></tr>
+  <tr><td><img alt="Tron" src="https://img.shields.io/badge/Tron-FF060A?style=flat-square&logo=tron&logoColor=white" /> <strong>USDT · TRC-20</strong></td><td><code>TGNrpZBqD8jnfNCb7B9W93qMmVHycoFsKJ</code></td></tr>
+</table>
+</div>
 
 A piano practice helper that runs entirely on your own computer: import the sheet music your teacher sent, listen to it first, play along, then let it point out the wrong notes.
 
@@ -254,22 +271,3 @@ piano-tutor/
 ├── requirements.txt
 └── requirements-ml.txt
 ```
-
----
-
-<div align="center">
-<h3>☕ Buy me a coffee</h3>
-<p>This app is free. If it has helped a child practice piano, tips in <strong>USDT</strong> are warmly appreciated.<br/>
-<sub>Please double-check the chain and network before sending; funds sent on the wrong network cannot be credited.</sub></p>
-<p>
-  <img alt="BSC USDT" src="https://img.shields.io/badge/BSC-USDT%20BEP--20-F3BA2F?style=for-the-badge&logo=binance&logoColor=white" />
-  <img alt="Solana USDT" src="https://img.shields.io/badge/Solana-USDT-9945FF?style=for-the-badge&logo=solana&logoColor=white" />
-  <img alt="Tron USDT" src="https://img.shields.io/badge/Tron-USDT%20TRC--20-FF060A?style=for-the-badge&logo=tron&logoColor=white" />
-</p>
-</div>
-
-| Network | Address |
-|:-----|:---------|
-| ![BSC](https://img.shields.io/badge/BSC-F3BA2F?style=flat-square&logo=binance&logoColor=white) **USDT · BEP-20** | `0x6E7359A42C466893E9A835fD6aFdb82E0D1Ed32d` |
-| ![Solana](https://img.shields.io/badge/Solana-9945FF?style=flat-square&logo=solana&logoColor=white) **USDT** | `Hm7f6wGdvcmLmbcXV7sdLYGJKBdwGoFrJTZPzeN8dpan` |
-| ![Tron](https://img.shields.io/badge/Tron-FF060A?style=flat-square&logo=tron&logoColor=white) **USDT · TRC-20** | `TGNrpZBqD8jnfNCb7B9W93qMmVHycoFsKJ` |
