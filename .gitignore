@@ -1,0 +1,15 @@
+.venv/
+.mpl/
+__pycache__/
+.pytest_cache/
+*.pyc
+node_modules/
+frontend/dist/
+data/pieces/
+data/models/
+.env
+.env.*
+!.env.example
+data/config.json
+data/config.json.bak
+.DS_Store
