@@ -40,6 +40,17 @@ def score_bpm_is_72(score) -> bool:
     return score_bpm(score) == 72
 
 
+def test_filename_is_not_written_as_movement_title(tmp_path):
+    score = build_sample()
+    score.metadata.movementName = "score.musicxml"
+    path = tmp_path / "out.musicxml"
+    write_score(score, path)
+    text = path.read_text(encoding="utf-8")
+    assert "score.musicxml" not in text
+    assert "<work-title>" in text
+    assert "<movement-title>" not in text
+
+
 def test_roundtrip_keeps_title(tmp_path):
     score = build_sample()
     assign_ids(score)

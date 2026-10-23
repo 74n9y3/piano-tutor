@@ -6,6 +6,10 @@ from pathlib import Path
 
 from music21 import chord, clef, converter, key, metadata, meter, note, stream, tempo
 
+from backend.i18n import t
+
+from backend.i18n import t
+
 DURATION_QUARTERS = {
     "whole": 4.0,
     "half": 2.0,
@@ -23,11 +27,11 @@ def build_sample() -> stream.Score:
     """A short original two-hand exercise in C major."""
     score = stream.Score()
     score.metadata = metadata.Metadata()
-    score.metadata.title = "双手五指练习"
+    score.metadata.title = t("sample_title")
     score.insert(0, tempo.MetronomeMark(number=72))
 
     right = stream.Part(id="P1")
-    right.partName = "右手"
+    right.partName = t("right_hand")
     measure = stream.Measure(number=1)
     measure.append(clef.TrebleClef())
     measure.append(key.KeySignature(0))
@@ -42,7 +46,7 @@ def build_sample() -> stream.Score:
     right.append(measure)
 
     left = stream.Part(id="P2")
-    left.partName = "左手"
+    left.partName = t("left_hand")
     measure = stream.Measure(number=1)
     measure.append(clef.BassClef())
     measure.append(key.KeySignature(0))
@@ -73,10 +77,10 @@ def parse_file(path: Path) -> stream.Score:
     try:
         parsed = converter.parse(str(path))
     except Exception as exc:
-        raise ScoreError("这个文件不是能打开的乐谱") from exc
+        raise ScoreError(t("not_a_score")) from exc
     score = as_score(parsed)
     if not list(score.parts) and not list(score.recurse().notes):
-        raise ScoreError("这份谱里没有找到音符")
+        raise ScoreError(t("no_notes_in_score"))
     return score
 
 
@@ -92,22 +96,47 @@ def parse_bytes(data: bytes) -> stream.Score:
         path.unlink(missing_ok=True)
 
 
+_FILENAME_TITLE = re.compile(r"^[^/\\<>]+\.(?:musicxml|xml|mid|midi)$", re.IGNORECASE)
+
+
+def _looks_like_filename(value: str) -> bool:
+    return bool(_FILENAME_TITLE.match(value.strip()))
+
+
 def write_score(score: stream.Score, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists():
         path.unlink()
+    _clear_filename_movement(score)
     score.write("musicxml", fp=str(path))
     _drop_duplicate_movement_title(path)
 
 
+def _clear_filename_movement(score: stream.Score) -> None:
+    """music21 uses the source filename as movementName when a file has no title."""
+    block = score.metadata
+    if block is None:
+        return
+    name = block.movementName
+    if name and _looks_like_filename(str(name)):
+        block.movementName = None
+
+
 def _drop_duplicate_movement_title(path: Path) -> None:
-    """music21 writes the same name as both the work title and the movement title."""
+    """Drop a movement title that repeats the work title or is only a filename.
+
+    music21 copies the work title into movement-title, and OSMD draws that second
+    line under the title. A filename such as score.musicxml is the same kind of
+    extra line when the real title lives in work-title.
+    """
     text = path.read_text(encoding="utf-8")
     work = re.search(r"<work-title>([^<]*)</work-title>", text)
     movement = re.search(r"<movement-title>([^<]*)</movement-title>", text)
-    if work is None or movement is None:
+    if movement is None:
         return
-    if work.group(1).strip() != movement.group(1).strip():
+    movement_text = movement.group(1).strip()
+    same_as_work = work is not None and work.group(1).strip() == movement_text
+    if not same_as_work and not _looks_like_filename(movement_text):
         return
     path.write_text(re.sub(r"\s*<movement-title>[^<]*</movement-title>", "", text, count=1), encoding="utf-8")
 
@@ -115,9 +144,9 @@ def _drop_duplicate_movement_title(path: Path) -> None:
 def rename_title(score: stream.Score, title: str) -> stream.Score:
     cleaned = " ".join(title.split())
     if not cleaned:
-        raise ScoreError("标题不能是空的")
+        raise ScoreError(t("title_empty"))
     if len(cleaned) > 40:
-        raise ScoreError("标题最多 40 个字")
+        raise ScoreError(t("title_too_long"))
     if score.metadata is None:
         score.metadata = metadata.Metadata()
     score.metadata.title = cleaned
@@ -125,14 +154,16 @@ def rename_title(score: stream.Score, title: str) -> stream.Score:
     return score
 
 
-def score_title(score: stream.Score, fallback: str = "未命名曲子") -> str:
+def score_title(score: stream.Score, fallback: str | None = None) -> str:
+    if not fallback:
+        fallback = t("untitled")
     metadata_block = score.metadata
     if metadata_block is not None:
         for value in (metadata_block.title, metadata_block.movementName, metadata_block.bestTitle):
             if not value:
                 continue
             title = str(value).strip()
-            if title and title.lower() != "music21":
+            if title and title.lower() != "music21" and not _looks_like_filename(title):
                 return title
     return fallback
 
@@ -203,12 +234,12 @@ def edit_note(
             found = element
             break
     if found is None:
-        raise ScoreError("找不到这个音，请重新点一次")
+        raise ScoreError(t("note_missing"))
     if semitone:
         _shift_pitch(found, chord_index, semitone)
     if duration:
         if duration not in DURATION_QUARTERS:
-            raise ScoreError("只能改成全音符、二分音符、四分音符或八分音符")
+            raise ScoreError(t("bad_duration"))
         found.duration.quarterLength = DURATION_QUARTERS[duration]
         score = _rebar(score)
     assign_ids(score)
@@ -223,7 +254,7 @@ def remove_note(score: stream.Score, note_id: str) -> stream.Score:
             found = element
             break
     if found is None or found.activeSite is None:
-        raise ScoreError("找不到这个音，请重新点一次")
+        raise ScoreError(t("note_missing"))
     site = found.activeSite
     offset = found.offset
     quarter_length = float(found.quarterLength)
@@ -294,7 +325,7 @@ def _pitched_elements(score: stream.Score):
 
 def _split_id(note_id: str) -> tuple[str, int | None]:
     if not re.fullmatch(r"n\d+(:c\d+)?", note_id):
-        raise ScoreError("找不到这个音，请重新点一次")
+        raise ScoreError(t("note_missing"))
     if ":c" not in note_id:
         return note_id, None
     base, index = note_id.split(":c")
@@ -304,11 +335,11 @@ def _split_id(note_id: str) -> tuple[str, int | None]:
 def _shift_pitch(element, chord_index: int | None, semitone: int) -> None:
     if isinstance(element, chord.Chord):
         if chord_index is None or chord_index >= len(element.pitches):
-            raise ScoreError("找不到这个音，请重新点一次")
+            raise ScoreError(t("note_missing"))
         element.pitches[chord_index].midi = int(element.pitches[chord_index].midi) + semitone
         return
     if not isinstance(element, note.Note):
-        raise ScoreError("这个记号不能改音高")
+        raise ScoreError(t("pitch_locked"))
     element.pitch.midi = int(element.pitch.midi) + semitone
 
 

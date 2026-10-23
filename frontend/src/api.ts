@@ -1,3 +1,4 @@
+import { langCode, t } from "./i18n";
 import type { AskRecord, Piece, RegionResult, ScoreMark, Take } from "./types";
 
 async function parseError(response: Response): Promise<string> {
@@ -7,11 +8,13 @@ async function parseError(response: Response): Promise<string> {
   } catch {
     /* The server sometimes returns an empty body. */
   }
-  return "请求没有成功";
+  return t("requestFailed");
 }
 
 async function send<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, options);
+  const headers = new Headers(options?.headers);
+  headers.set("X-Lang", langCode());
+  const response = await fetch(url, { ...options, headers });
   if (!response.ok) throw new Error(await parseError(response));
   return response.json() as Promise<T>;
 }
@@ -23,7 +26,7 @@ export const api = {
   piece: (id: string) => send<Piece>(`/api/pieces/${id}`),
   remove: (id: string) => send<{ ok: boolean }>(`/api/pieces/${id}`, { method: "DELETE" }),
   score: async (id: string) => {
-    const response = await fetch(`/api/pieces/${id}/score`);
+    const response = await fetch(`/api/pieces/${id}/score`, { headers: { "X-Lang": langCode() } });
     if (!response.ok) throw new Error(await parseError(response));
     return response.text();
   },

@@ -70,6 +70,7 @@ export interface AskRecord {
   label: string;
   text: string;
   noteId: string | null;
+  lang?: string;
 }
 
 export interface Take {

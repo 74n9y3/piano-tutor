@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>钢琴陪练</title>
+    <title>Piano Tutor</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -15,10 +15,19 @@
             <path d="M14 8v32M22 8v20M30 8v20M38 8v32M22 28h16" fill="none" stroke="currentColor" stroke-width="2" />
           </svg>
           <div>
-            <h1>钢琴陪练</h1>
+            <h1 data-i18n="appTitle"></h1>
           </div>
         </div>
-        <p id="status" role="status">把老师发的谱子拍下来，先听，再跟着弹。</p>
+        <div class="header-end">
+          <p id="status" role="status"></p>
+          <div class="dropdown dropdown-end">
+            <button id="langButton" class="btn btn-ghost btn-sm btn-square" type="button" data-i18n-aria="language"></button>
+            <ul tabindex="0" class="dropdown-content menu lang-menu">
+              <li><button id="langZh" type="button">中文</button></li>
+              <li><button id="langEn" type="button">English</button></li>
+            </ul>
+          </div>
+        </div>
       </header>
 
       <section id="welcome">
@@ -26,45 +35,45 @@
           <div class="library-top">
             <div class="library-head">
               <div class="library-title-row">
-                <h2>曲库</h2>
+                <h2 data-i18n="library"></h2>
                 <span id="libraryCount"></span>
               </div>
-              <p>谱子只在这台电脑上。点曲名开始练。</p>
+              <p data-i18n="libraryHint"></p>
             </div>
             <div class="dropdown dropdown-end">
-              <button id="addMenu" class="btn btn-primary btn-sm" type="button">新增曲子</button>
+              <button id="addMenu" class="btn btn-primary btn-sm" type="button" data-i18n="addPiece"></button>
               <ul tabindex="0" class="dropdown-content menu add-menu">
                 <li>
                   <button id="pickXml" type="button">
-                    <span class="add-copy"><strong>MusicXML</strong><small>导入写好的 .musicxml 或 .xml</small></span>
+                    <span class="add-copy"><strong>MusicXML</strong><small data-i18n="addXml"></small></span>
                   </button>
                 </li>
                 <li>
                   <button id="pickMidi" type="button">
-                    <span class="add-copy"><strong>MIDI</strong><small>把 .mid 文件写成谱</small></span>
+                    <span class="add-copy"><strong>MIDI</strong><small data-i18n="addMidi"></small></span>
                   </button>
                 </li>
                 <li>
                   <button id="pickPhoto" type="button">
-                    <span class="add-copy"><strong>拍照 / 选谱子图片</strong><small>可以一次选多页，再调整顺序</small></span>
+                    <span class="add-copy"><strong data-i18n="addPhoto"></strong><small data-i18n="addPhotoHint"></small></span>
                   </button>
                 </li>
                 <li>
                   <button id="improvStart" type="button">
-                    <span class="add-copy"><strong>即兴录音</strong><small>弹一段，自动写成谱</small></span>
+                    <span class="add-copy"><strong data-i18n="addImprov"></strong><small data-i18n="addImprovHint"></small></span>
                   </button>
                 </li>
               </ul>
             </div>
           </div>
           <div class="library-tools">
-            <input id="libraryQuery" class="input input-bordered input-sm" type="search" placeholder="查找曲名" aria-label="查找曲名" />
-            <div class="filters" role="tablist" aria-label="筛选来源">
-              <button class="filter-tab" type="button" role="tab" data-filter="all" aria-selected="true">全部</button>
-              <button class="filter-tab" type="button" role="tab" data-filter="score" aria-selected="false">乐谱</button>
-              <button class="filter-tab" type="button" role="tab" data-filter="photo" aria-selected="false">照片</button>
-              <button class="filter-tab" type="button" role="tab" data-filter="midi" aria-selected="false">MIDI</button>
-              <button class="filter-tab" type="button" role="tab" data-filter="improv" aria-selected="false">即兴</button>
+            <input id="libraryQuery" class="input input-bordered input-sm" type="search" data-i18n-placeholder="searchPlaceholder" data-i18n-aria="searchLabel" />
+            <div class="filters" role="tablist" data-i18n-aria="filterLabel">
+              <button class="filter-tab" type="button" role="tab" data-filter="all" aria-selected="true" data-i18n="filterAll"></button>
+              <button class="filter-tab" type="button" role="tab" data-filter="score" aria-selected="false" data-i18n="filterScore"></button>
+              <button class="filter-tab" type="button" role="tab" data-filter="photo" aria-selected="false" data-i18n="filterPhoto"></button>
+              <button class="filter-tab" type="button" role="tab" data-filter="midi" aria-selected="false" data-i18n="filterMidi">MIDI</button>
+              <button class="filter-tab" type="button" role="tab" data-filter="improv" aria-selected="false" data-i18n="filterImprov"></button>
             </div>
           </div>
           <input id="xmlFile" type="file" accept=".xml,.musicxml,application/xml" hidden />
@@ -74,12 +83,12 @@
           <div id="pieceList" class="piece-list"></div>
         </div>
         <div class="library improv" id="improvPanel" hidden>
-          <h2>即兴录音</h2>
-          <p>把电脑靠近钢琴，想弹什么就弹。弹完点停止，听到的会写成谱。最长 3 分钟。</p>
+          <h2 data-i18n="improvTitle"></h2>
+          <p data-i18n="improvHint"></p>
           <p id="improvClock" class="improv-clock">0:00</p>
           <div class="row">
-            <button id="improvStop" class="btn btn-primary" type="button">停止并写成谱</button>
-            <button id="improvCancel" class="btn btn-ghost" type="button">取消</button>
+            <button id="improvStop" class="btn btn-primary" type="button" data-i18n="improvStop"></button>
+            <button id="improvCancel" class="btn btn-ghost" type="button" data-i18n="cancel"></button>
           </div>
         </div>
       </section>
@@ -87,65 +96,65 @@
       <section id="workspace" hidden>
         <div class="transport">
           <div class="transport-start">
-            <div class="tooltip tooltip-bottom" data-tip="返回曲库">
-              <button id="back" class="btn btn-ghost btn-sm btn-square" type="button" aria-label="返回曲库"></button>
+            <div class="tooltip tooltip-bottom" data-i18n-tip="back">
+              <button id="back" class="btn btn-ghost btn-sm btn-square" type="button" data-i18n-aria="back"></button>
             </div>
-            <button id="pieceTitle" class="piece-title" type="button" title="点一下改标题"></button>
-            <input id="pieceTitleInput" class="piece-title-input" hidden maxlength="40" aria-label="曲名" />
+            <button id="pieceTitle" class="piece-title" type="button" data-i18n-title="editTitle"></button>
+            <input id="pieceTitleInput" class="piece-title-input" hidden maxlength="40" data-i18n-aria="pieceTitle" />
           </div>
           <div class="transport-center">
-            <button id="play" class="btn btn-primary btn-sm transport-play" type="button" aria-label="播放">播放</button>
+            <button id="play" class="btn btn-primary btn-sm transport-play" type="button" aria-label="Play"></button>
             <label class="speed">
-              <span class="sr-only">速度</span>
-              <input id="speed" class="range range-xs range-primary" type="range" min="0.6" max="1.2" step="0.05" value="1" aria-label="速度" />
+              <span class="sr-only" data-i18n="speed"></span>
+              <input id="speed" class="range range-xs range-primary" type="range" min="0.6" max="1.2" step="0.05" value="1" data-i18n-aria="speed" />
               <span id="speedLabel"></span>
             </label>
             <div class="dropdown">
-              <button id="rangeLabel" class="btn btn-ghost btn-sm" type="button">第 1 小节</button>
+              <button id="rangeLabel" class="btn btn-ghost btn-sm" type="button"></button>
               <div tabindex="0" class="dropdown-content range-panel">
-                <label>从 <input id="fromMeasure" class="input input-bordered input-sm" type="number" min="1" value="1" /> 小节</label>
-                <label>到 <input id="toMeasure" class="input input-bordered input-sm" type="number" min="1" value="1" /> 小节</label>
+                <label><span data-i18n="fromMeasure"></span> <input id="fromMeasure" class="input input-bordered input-sm" type="number" min="1" value="1" /> <span data-i18n="measureWord"></span></label>
+                <label><span data-i18n="toMeasure"></span> <input id="toMeasure" class="input input-bordered input-sm" type="number" min="1" value="1" /> <span data-i18n="measureWord"></span></label>
               </div>
             </div>
           </div>
           <div class="transport-end">
-            <div class="join" role="group" aria-label="练习">
-              <button id="follow" class="btn btn-sm join-item" type="button" aria-label="跟弹">跟弹</button>
-              <button id="record" class="btn btn-sm join-item" type="button" aria-label="录音检查">录音检查</button>
+            <div class="join" role="group" data-i18n-aria="practice">
+              <button id="follow" class="btn btn-sm join-item" type="button" aria-label="Follow"></button>
+              <button id="record" class="btn btn-sm join-item" type="button" aria-label="Record"></button>
             </div>
-            <div class="tooltip tooltip-bottom" data-tip="简谱开关">
-              <button id="jianpuToggle" class="btn btn-ghost btn-sm btn-square" type="button" aria-pressed="true" aria-label="简谱开关"></button>
+            <div class="tooltip tooltip-bottom" data-i18n-tip="jianpuTip">
+              <button id="jianpuToggle" class="btn btn-ghost btn-sm btn-square" type="button" aria-pressed="true" data-i18n-aria="jianpuLabel"></button>
             </div>
-            <div class="tooltip tooltip-bottom" data-tip="怎么读">
-              <button id="readToggle" class="btn btn-ghost btn-sm btn-square" type="button" aria-pressed="false" aria-label="怎么读"></button>
+            <div class="tooltip tooltip-bottom" data-i18n-tip="readTip">
+              <button id="readToggle" class="btn btn-ghost btn-sm btn-square" type="button" aria-pressed="false" data-i18n-aria="readLabel"></button>
             </div>
             <div class="dropdown dropdown-end">
-              <div class="tooltip tooltip-bottom" data-tip="更多">
-                <button id="moreMenu" class="btn btn-ghost btn-sm btn-square" type="button" aria-label="更多"></button>
+              <div class="tooltip tooltip-bottom" data-i18n-tip="more">
+                <button id="moreMenu" class="btn btn-ghost btn-sm btn-square" type="button" data-i18n-aria="more"></button>
               </div>
               <ul tabindex="0" class="dropdown-content menu more-menu">
                 <li>
-                  <div class="menu-zoom" role="group" aria-label="谱面大小">
-                    <button id="zoomOut" class="btn btn-ghost btn-xs btn-square" type="button" aria-label="缩小谱面"></button>
+                  <div class="menu-zoom" role="group" data-i18n-aria="zoom">
+                    <button id="zoomOut" class="btn btn-ghost btn-xs btn-square" type="button" data-i18n-aria="zoomOut"></button>
                     <span id="zoomLabel">100%</span>
-                    <button id="zoomIn" class="btn btn-ghost btn-xs btn-square" type="button" aria-label="放大谱面"></button>
+                    <button id="zoomIn" class="btn btn-ghost btn-xs btn-square" type="button" data-i18n-aria="zoomIn"></button>
                   </div>
                 </li>
-                <li><button id="askMark" type="button" aria-pressed="false">圈记号</button></li>
-                <li id="photoToggleItem" hidden><button id="photoToggle" type="button" aria-pressed="false">对照原图</button></li>
-                <li><button id="clearMarks" type="button">清除标记</button></li>
-                <li id="pageManageItem" hidden><button id="pageManage" type="button">管理页面</button></li>
+                <li><button id="askMark" type="button" aria-pressed="false"></button></li>
+                <li id="photoToggleItem" hidden><button id="photoToggle" type="button" aria-pressed="false"></button></li>
+                <li><button id="clearMarks" type="button"></button></li>
+                <li id="pageManageItem" hidden><button id="pageManage" type="button"></button></li>
                 <li class="menu-rule" aria-hidden="true"></li>
-                <li><button id="exportPiece" type="button">导出</button></li>
-                <li><button id="revealPiece" type="button">打开目录</button></li>
+                <li><button id="exportPiece" type="button"></button></li>
+                <li><button id="revealPiece" type="button"></button></li>
                 <li class="menu-rule" aria-hidden="true"></li>
-                <li id="deleteItem"><button id="removePiece" class="text-error" type="button">删除</button></li>
+                <li id="deleteItem"><button id="removePiece" class="text-error" type="button"></button></li>
                 <li id="deleteConfirm" hidden>
                   <div class="delete-confirm">
-                    <p>确认删除这首曲子？</p>
+                    <p data-i18n="confirmDelete"></p>
                     <div>
-                      <button id="confirmRemove" class="btn btn-error btn-xs" type="button">确认删除</button>
-                      <button id="cancelRemove" class="btn btn-ghost btn-xs" type="button">取消</button>
+                      <button id="confirmRemove" class="btn btn-error btn-xs" type="button"></button>
+                      <button id="cancelRemove" class="btn btn-ghost btn-xs" type="button"></button>
                     </div>
                   </div>
                 </li>
@@ -155,32 +164,32 @@
         </div>
         <div id="followBanner" hidden>
           <p id="followPrompt"></p>
-          <p class="follow-keys-hint">也可以点下方琴键或按 A–K 键</p>
+          <p class="follow-keys-hint" data-i18n="followKeys"></p>
         </div>
         <div id="stage">
           <div id="desk">
             <aside id="photoPane" hidden>
               <div class="pane-head">
-                <h2>原图</h2>
+                <h2 data-i18n="photo"></h2>
                 <div id="photoPager" class="photo-pager" hidden>
-                  <button id="photoPrev" class="btn btn-ghost btn-xs" type="button">上一页</button>
-                  <span id="photoPageLabel">第 1/1 页</span>
-                  <button id="photoNext" class="btn btn-ghost btn-xs" type="button">下一页</button>
+                  <button id="photoPrev" class="btn btn-ghost btn-xs" type="button"></button>
+                  <span id="photoPageLabel"></span>
+                  <button id="photoNext" class="btn btn-ghost btn-xs" type="button"></button>
                 </div>
               </div>
               <div id="photoFrame">
-                <img id="photo" alt="乐谱原图" />
+                <img id="photo" alt="" data-i18n-aria="photo" />
               </div>
             </aside>
             <div id="scorePane">
-              <p id="askHint" class="hint" hidden>点一下谱上的记号。音符旁边的点、线、数字和字都会说明，不用框得很准。</p>
+              <p id="askHint" class="hint" hidden data-i18n="askHint"></p>
               <div id="scoreSheet">
                 <div id="score"></div>
                 <div id="scoreBox" hidden></div>
                 <div id="askBubble" class="ask-bubble" hidden>
                   <div class="ask-bubble-bar">
-                    <strong>说明</strong>
-                    <button id="askBubbleClose" class="btn btn-ghost btn-xs btn-circle" type="button" aria-label="关闭说明">×</button>
+                    <strong data-i18n="explanation"></strong>
+                    <button id="askBubbleClose" class="btn btn-ghost btn-xs btn-circle" type="button" data-i18n-aria="closeExplanation">×</button>
                   </div>
                   <p id="askBubbleText"></p>
                 </div>
@@ -189,17 +198,17 @@
           </div>
           <aside id="readSheet" hidden>
             <div class="read-head">
-              <h2>这首怎么读</h2>
-              <button id="readClose" class="btn btn-ghost btn-xs btn-circle" type="button" aria-label="关闭">×</button>
+              <h2 data-i18n="howToRead"></h2>
+              <button id="readClose" class="btn btn-ghost btn-xs btn-circle" type="button" data-i18n-aria="close">×</button>
             </div>
             <div id="facts"></div>
             <section id="askHistory">
-              <h2>问过的记号</h2>
-              <p id="askHistoryEmpty" class="empty">问过的记号会留在这里。</p>
+              <h2 data-i18n="askedMarks"></h2>
+              <p id="askHistoryEmpty" class="empty" data-i18n="askedEmpty"></p>
               <ol id="askHistoryList"></ol>
             </section>
             <details>
-              <summary>常见记号</summary>
+              <summary data-i18n="commonMarks"></summary>
               <div id="glossary"></div>
             </details>
           </aside>
@@ -210,14 +219,14 @@
               <p id="selectionName"></p>
               <p id="dotHint" class="hint" hidden></p>
             </div>
-            <div class="join" role="group" aria-label="音高">
-              <button id="down" class="btn btn-sm join-item" type="button">低半音</button>
-              <button id="up" class="btn btn-sm join-item" type="button">高半音</button>
+            <div class="join" role="group" data-i18n-aria="pitchGroup">
+              <button id="down" class="btn btn-sm join-item" type="button"></button>
+              <button id="up" class="btn btn-sm join-item" type="button"></button>
             </div>
-            <div class="join" id="durations" role="group" aria-label="时值"></div>
+            <div class="join" id="durations" role="group" data-i18n-aria="durationGroup"></div>
             <div class="editor-actions">
-              <button id="askNote" class="btn btn-sm btn-soft" type="button">说明</button>
-              <button id="removeNote" class="btn btn-ghost btn-sm text-error" type="button">去掉</button>
+              <button id="askNote" class="btn btn-sm btn-soft" type="button"></button>
+              <button id="removeNote" class="btn btn-ghost btn-sm text-error" type="button"></button>
             </div>
           </section>
         </div>
@@ -228,37 +237,37 @@
           </section>
         </div>
         <div id="keyboard" hidden>
-          <div class="hand-legend" aria-label="颜色图例"><span class="right">右手</span><span class="left">左手</span></div>
+          <div class="hand-legend" data-i18n-aria="legend"><span class="right" data-i18n="rightHand"></span><span class="left" data-i18n="leftHand"></span></div>
           <div id="keysHost"></div>
         </div>
       </section>
     </div>
     <dialog id="pageImport" class="modal">
       <div class="modal-box page-dialog">
-        <h3>导入谱子图片</h3>
-        <p class="hint">按从上到下的顺序识别。可以拖动排序，也可以用上移、下移。</p>
-        <label class="page-title-field">曲名
+        <h3 data-i18n="importTitle"></h3>
+        <p class="hint" data-i18n="importHint"></p>
+        <label class="page-title-field"><span data-i18n="titleField"></span>
           <input id="pageImportTitle" class="input input-bordered input-sm" maxlength="40" />
         </label>
         <ol id="pageImportList" class="page-draft"></ol>
         <div class="page-dialog-actions">
-          <button id="pageImportAdd" class="btn btn-sm" type="button">继续添加</button>
-          <button id="pageImportCancel" class="btn btn-ghost btn-sm" type="button">取消</button>
-          <button id="pageImportStart" class="btn btn-primary btn-sm" type="button">开始识别</button>
+          <button id="pageImportAdd" class="btn btn-sm" type="button"></button>
+          <button id="pageImportCancel" class="btn btn-ghost btn-sm" type="button"></button>
+          <button id="pageImportStart" class="btn btn-primary btn-sm" type="button"></button>
         </div>
       </div>
-      <form method="dialog" class="modal-backdrop"><button type="submit">关闭</button></form>
+      <form method="dialog" class="modal-backdrop"><button type="submit" data-i18n="close"></button></form>
     </dialog>
     <dialog id="pageManager" class="modal">
       <div class="modal-box page-dialog">
-        <h3>页面</h3>
-        <p class="hint">某一页没认好时，可以只重做这一页，或换一张更清楚的照片。</p>
+        <h3 data-i18n="pagesTitle"></h3>
+        <p class="hint" data-i18n="pagesHint"></p>
         <ol id="pageManagerList" class="page-draft"></ol>
         <div class="page-dialog-actions">
-          <button id="pageManagerClose" class="btn btn-sm" type="button">关闭</button>
+          <button id="pageManagerClose" class="btn btn-sm" type="button"></button>
         </div>
       </div>
-      <form method="dialog" class="modal-backdrop"><button type="submit">关闭</button></form>
+      <form method="dialog" class="modal-backdrop"><button type="submit" data-i18n="close"></button></form>
     </dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -77,30 +77,54 @@ def config_status() -> dict:
     return {"aiConfigured": bool(key)}
 
 
+EN_SYSTEM = (
+    "You are helping a child who is learning the piano, and a parent who may not read music. "
+    "Answer only in English. Use short sentences and standard English piano terms "
+    "such as treble clef, bass clef, time signature, key signature, sharp, flat, natural, "
+    "slur, tie, staccato, measure, and middle C. "
+    "The program has already identified the markings. Do not rename them and do not invent markings that are not listed. "
+    "For each one, say what it looks like, what it is called, what it means, and how the child should play it. "
+    "Keep any description of shape or position that was given to you, such as a small grid or a dot under the notehead."
+)
+
+ZH_USER = (
+    "你在给完全不识谱的家长解释钢琴谱。"
+    "程序已经从谱上认出了记号，下面是身份，不要改成别的记号，也不要编造没有列出的记号。"
+    "你来说明每一个：看起来什么样、叫什么、什么意思、孩子要怎么弹。"
+    "用短句，用中文。如果只给了英文名字，要翻译成家长能懂的话，不要只重复英文。"
+    "如果写了样子或位置，例如小格子、符头下面的小圆点，这些词要留下来。\n\n"
+)
+
+EN_USER = (
+    "These markings were identified on the piano score. "
+    "Explain only the markings listed below.\n\n"
+)
+
+
+def mark_messages(identified: str, language: str) -> list[dict]:
+    if language == "en":
+        return [
+            {"role": "system", "content": EN_SYSTEM},
+            {"role": "user", "content": EN_USER + identified},
+        ]
+    return [{"role": "user", "content": ZH_USER + identified}]
+
+
 def explain_marks(marks: list[dict]) -> dict:
     """The score identifies the marks. The model explains what they mean and how to play them."""
+    from backend.i18n import lang, t
+
     identified = describe_marks(marks)
     if not identified:
-        return {
-            "mode": "marks",
-            "text": "没有点到谱号、拍号或音符。点一下音符，或音符旁边的记号。",
-            "glossary": [],
-        }
+        return {"mode": "marks", "text": t("no_mark_hit"), "glossary": []}
     config = load_config()
     api_key = str(config.get("vision_api_key") or "").strip()
     if not api_key:
         return {"mode": "marks", "text": identified, "glossary": []}
-    prompt = (
-        "你在给完全不识谱的家长解释钢琴谱。"
-        "程序已经从谱上认出了记号，下面是身份，不要改成别的记号，也不要编造没有列出的记号。"
-        "你来说明每一个：看起来什么样、叫什么、什么意思、孩子要怎么弹。"
-        "用短句，用中文。如果只给了英文名字，要翻译成家长能懂的话，不要只重复英文。"
-        "如果写了样子或位置，例如小格子、符头下面的小圆点，这些词要留下来。\n\n"
-        + identified
-    )
+    messages = mark_messages(identified, lang())
     body = {
         "model": config["vision_model"],
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": messages,
     }
     request = urllib.request.Request(
         config["vision_base_url"].rstrip("/") + "/chat/completions",

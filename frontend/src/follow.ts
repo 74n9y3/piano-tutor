@@ -27,7 +27,7 @@ export function decideFollow(
 ): ListenDecision {
   const next: ListenState = { ...state };
   const repeatHint =
-    nextMidi === targetMidi ? "下一个音和这个音相同，先松开再弹一次。" : null;
+    nextMidi === targetMidi ? "same-note" : null;
 
   if (heardMidi === null) {
     next.quiet += 1;
@@ -75,7 +75,7 @@ export function decideFollowNote(
   heardMidi: number,
 ): ListenDecision {
   const repeatHint =
-    nextMidi === targetMidi ? "下一个音和这个音相同，先松开再弹一次。" : null;
+    nextMidi === targetMidi ? "same-note" : null;
   if (heardMidi === targetMidi) {
     return { state: initialListen(), action: "advance", heard: heardMidi, hint: repeatHint };
   }

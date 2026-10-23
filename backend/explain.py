@@ -95,6 +95,12 @@ GLOSSARY = [
 
 
 def explain_score(score, bpm: int | None = None) -> dict:
+    from backend.i18n import lang
+
+    if lang() == "en":
+        from backend.explain_en import explain_score_en
+
+        return explain_score_en(score, bpm)
     facts = []
     facts.extend(_clef_facts(score))
     facts.extend(_key_facts(score))
@@ -110,7 +116,14 @@ def explain_score(score, bpm: int | None = None) -> dict:
 
 
 def glossary_payload(message: str) -> dict:
-    return {"mode": "glossary", "message": message, "glossary": GLOSSARY}
+    from backend.i18n import lang
+
+    glossary = GLOSSARY
+    if lang() == "en":
+        from backend.explain_en import GLOSSARY as ENGLISH_GLOSSARY
+
+        glossary = ENGLISH_GLOSSARY
+    return {"mode": "glossary", "message": message, "glossary": glossary}
 
 
 _PITCH = re.compile(r"^[A-G][♯#♭b-]?-?\d{1,2}$")
@@ -132,6 +145,12 @@ _REST_PLAY = {
 
 def describe_marks(marks: list[dict]) -> str:
     """Explain symbols the program already identified on the engraved score."""
+    from backend.i18n import lang
+
+    if lang() == "en":
+        from backend.explain_en import describe_marks_en
+
+        return describe_marks_en(marks)
     lines = []
     for mark in marks:
         line = _mark_line(mark)

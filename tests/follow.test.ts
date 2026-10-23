@@ -28,7 +28,7 @@ assert.equal(again.action, "wait");
 let repeated = decideFollow(initialListen(), 60, 60, 60);
 for (let i = 0; i < 3; i += 1) repeated = decideFollow(repeated.state, 60, 60, 60);
 assert.equal(repeated.action, "advance");
-assert.match(repeated.hint ?? "", /松开/);
+assert.equal(repeated.hint, "same-note");
 let quiet = repeated;
 for (let i = 0; i < 3; i += 1) quiet = decideFollow(quiet.state, 60, 60, null);
 assert.equal(quiet.state.latched, null);
@@ -52,6 +52,6 @@ assert.equal(chordTarget.action, "advance");
 
 const repeatedTap = decideFollowNote(60, 60, 60);
 assert.equal(repeatedTap.action, "advance");
-assert.match(repeatedTap.hint ?? "", /松开/);
+assert.equal(repeatedTap.hint, "same-note");
 
 console.log("follow decisions ok");

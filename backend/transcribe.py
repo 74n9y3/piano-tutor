@@ -5,6 +5,8 @@ import threading
 import urllib.request
 from pathlib import Path
 
+from backend.i18n import t
+from backend.i18n import t
 from backend.paths import models_dir
 
 MODEL_URL = (
@@ -37,10 +39,10 @@ def ensure_checkpoint() -> Path:
             shutil.copyfileobj(response, handle)
     except Exception as exc:
         temporary.unlink(missing_ok=True)
-        raise TranscribeError("钢琴听音模型下载失败，请检查网络后再录一次。") from exc
+        raise TranscribeError(t("model_download_failed")) from exc
     if temporary.stat().st_size < MIN_BYTES:
         temporary.unlink(missing_ok=True)
-        raise TranscribeError("钢琴听音模型没有下完整，请再录一次。")
+        raise TranscribeError(t("model_incomplete"))
     temporary.replace(path)
     return path
 
@@ -51,7 +53,7 @@ def transcribe_wav(path: Path, *, purpose: str = "practice") -> list[dict]:
         from piano_transcription_inference import PianoTranscription, sample_rate
     except ImportError as exc:
         raise TranscribeError(
-            "还没有安装钢琴听音组件。在项目目录运行：uv pip install -r requirements-ml.txt"
+            t("model_missing")
         ) from exc
 
     _patch_torch_load(torch)
@@ -61,11 +63,11 @@ def transcribe_wav(path: Path, *, purpose: str = "practice") -> list[dict]:
     except TranscribeError:
         raise
     except Exception as exc:
-        raise TranscribeError("这段录音读不出来，请再录一次。") from exc
+        raise TranscribeError(t("wav_unreadable")) from exc
     if audio is None or len(audio) < sample_rate * 0.25:
         if purpose == "improv":
-            raise TranscribeError("录音太短了。再弹一会儿再停止。")
-        raise TranscribeError("录音太短了。弹完选定的几小节再停止。")
+            raise TranscribeError(t("take_too_short"))
+        raise TranscribeError(t("take_too_short_range"))
 
     global _transcriber
     with _lock:
@@ -99,7 +101,7 @@ def _read_wav(path: Path, target_rate: int):
         rate = handle.getframerate()
         frames = handle.readframes(handle.getnframes())
     if width != 2 or channels < 1:
-        raise TranscribeError("这段录音读不出来，请再录一次。")
+        raise TranscribeError(t("wav_unreadable"))
     audio = np.frombuffer(frames, dtype="<i2").astype(np.float32) / 32768.0
     if channels > 1:
         audio = audio.reshape(-1, channels).mean(axis=1)

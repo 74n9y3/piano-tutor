@@ -86,6 +86,8 @@ header {
 }
 
 .brand { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
+.header-end { display: flex; align-items: center; gap: 0.35rem; min-width: 0; }
+.lang-menu { min-width: 8rem; }
 
 .logo { width: 1.7rem; height: 1.7rem; color: var(--ink); flex: none; }
 

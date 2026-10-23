@@ -11,6 +11,8 @@ from datetime import datetime
 
 from music21 import chord, clef, key, metadata, meter, note, stream, tempo, tie
 
+from backend.i18n import lang, t
+
 GRID = 0.5
 MEASURE = 4.0
 
@@ -21,13 +23,16 @@ class NotateError(Exception):
 
 def improv_title(moment: datetime | None = None) -> str:
     when = moment or datetime.now()
-    return f"即兴 {when.month}月{when.day}日 {when.hour:02d}:{when.minute:02d}"
+    clock = f"{when.hour:02d}:{when.minute:02d}"
+    if lang() == "en":
+        return f"Improv {when.month}/{when.day} {clock}"
+    return f"即兴 {when.month}月{when.day}日 {clock}"
 
 
 def notes_to_score(events: list[dict], title: str) -> stream.Score:
     cleaned = _clean(events)
     if not cleaned:
-        raise NotateError("没有听出钢琴的音。把电脑靠近钢琴，再弹一遍。")
+        raise NotateError(t("no_piano"))
     quarter = _quarter_seconds(cleaned)
     origin = min(event["onset"] for event in cleaned)
     placed = []
@@ -43,14 +48,14 @@ def notes_to_score(events: list[dict], title: str) -> stream.Score:
     end_limit = measures * MEASURE
     placed = [(start, min(end, end_limit), midi) for start, end, midi in placed if start < end_limit]
     if not placed:
-        raise NotateError("没有听出钢琴的音。把电脑靠近钢琴，再弹一遍。")
+        raise NotateError(t("no_piano"))
 
     bpm = int(round(60 / quarter))
     score = stream.Score()
     score.metadata = metadata.Metadata()
     score.metadata.title = title
-    score.insert(0, _part([(start, end, midi) for start, end, midi in placed if midi >= 60], clef.TrebleClef(), "P1", "右手", end_limit, bpm))
-    score.insert(0, _part([(start, end, midi) for start, end, midi in placed if midi < 60], clef.BassClef(), "P2", "左手", end_limit, None))
+    score.insert(0, _part([(start, end, midi) for start, end, midi in placed if midi >= 60], clef.TrebleClef(), "P1", t("right_hand"), end_limit, bpm))
+    score.insert(0, _part([(start, end, midi) for start, end, midi in placed if midi < 60], clef.BassClef(), "P2", t("left_hand"), end_limit, None))
     return score
 
 
@@ -121,8 +126,8 @@ def quarters_to_score(
     score = stream.Score()
     score.metadata = metadata.Metadata()
     score.metadata.title = title
-    score.insert(0, _part(clip(right), clef.TrebleClef(), "P1", "右手", end_limit, bpm, grid, measure))
-    score.insert(0, _part(clip(left), clef.BassClef(), "P2", "左手", end_limit, None, grid, measure))
+    score.insert(0, _part(clip(right), clef.TrebleClef(), "P1", t("right_hand"), end_limit, bpm, grid, measure))
+    score.insert(0, _part(clip(left), clef.BassClef(), "P2", t("left_hand"), end_limit, None, grid, measure))
     return score
 
 

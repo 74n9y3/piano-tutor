@@ -1,4 +1,6 @@
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
+import { stripFilenameMovementTitle } from "./scoreXml";
+import { t, type MessageKey } from "./i18n";
 import { jianpuOf } from "./pitch";
 import type { NoteHead, ScoreMark, ScoreSymbol } from "./types";
 
@@ -74,7 +76,7 @@ export class ScoreView {
       drawFingerings: true,
       drawLyrics: false,
     });
-    await osmd.load(xml);
+    await osmd.load(stripFilenameMovementTitle(xml));
     // load() resets zoom to 1. Set it again or the buttons appear to do nothing.
     osmd.Zoom = zoom;
     this.layoutScore(osmd);
@@ -486,50 +488,52 @@ function rankMarks(marks: ScoreMark[]): ScoreMark[] {
 export function symbolCaption(note: MappedNote): string {
   return note.symbols
     .map((item) => {
-      if (item.code === "staccato" && item.detail === "below") return "下面这个小圆点是跳音。这个音不要按满，点一下就松开。";
-      if (item.code === "staccato") return "这个小圆点是跳音。这个音不要按满，点一下就松开。";
-      return SYMBOL_CAPTION[item.code] ?? "";
+      if (item.code === "staccato" && item.detail === "below") return t("staccatoBelow");
+      if (item.code === "staccato") return t("staccato");
+      const key = SYMBOL_CAPTION[item.code];
+      return key ? t(key) : "";
     })
     .filter((line, index, all) => line && all.indexOf(line) === index)
     .join("");
 }
 
-const SYMBOL_CAPTION: Record<string, string> = {
-  staccatissimo: "这个小楔子是顿音。比跳音更短，点一下马上松开。",
-  accent: "这个尖角是重音。这个音要比旁边的音更突出一点。",
-  strongaccent: "这个尖角是很重的音。这个音要明显重一些。",
-  tenuto: "这条短横线是保持音。这个音要按满，不要弹短。",
-  fermata: "这个弧线和点是延长记号。这个音可以停久一点再走。",
-  tie: "连着同一个音的弧线是延音线。按住不要弹第二次。",
-  slur: "这条弧线是连线。连着的音要连着弹，中间不要断开。",
-  trill: "tr 是颤音。这个音和上面的音快速交替。",
-  turn: "这个弯钩是回音。上面、本身、下面、再回到本身。",
-  mordent: "这个波纹是波音。很快碰一下旁边的音再回来。",
-  fingering: "旁边的小数字是指法。1 是大拇指，5 是小指。",
+const SYMBOL_CAPTION: Record<string, MessageKey> = {
+  staccatissimo: "staccatissimo",
+  accent: "accent",
+  strongaccent: "strongAccent",
+  tenuto: "tenuto",
+  fermata: "fermata",
+  tie: "tie",
+  slur: "slur",
+  trill: "trill",
+  turn: "turn",
+  mordent: "mordent",
+  fingering: "fingering",
 };
 
 export function accidentalCaption(note: MappedNote): string {
-  if (note.accidental === "sharp") return "左边那个像小格子的是升号。这个音改弹右边紧挨着的琴键，常常是黑键。";
-  if (note.accidental === "flat") return "左边那个像小写 b 的是降号。这个音改弹左边紧挨着的琴键，常常是黑键。";
-  if (note.accidental === "natural") return "左边那个像小方框的是还原号。这个音回到白键，不再升高，也不再降低。";
-  if (note.accidental === "double-sharp") return "左边的记号是重升号。这个音要再高一些，弹右边第二个键。";
-  if (note.accidental === "double-flat") return "左边的记号是重降号。这个音要再低一些，弹左边第二个键。";
+  if (note.accidental === "sharp") return t("sharp");
+  if (note.accidental === "flat") return t("flat");
+  if (note.accidental === "natural") return t("natural");
+  if (note.accidental === "double-sharp") return t("doubleSharp");
+  if (note.accidental === "double-flat") return t("doubleFlat");
   return "";
 }
 
 export function dotCaption(note: MappedNote): string {
   if (note.dots < 1) return "";
   const written = writtenDuration(note.quarterLength, note.dots);
-  const hold: Record<string, string> = {
-    "quarter:1": "本来唱 1 拍，加上这个点一共唱 1 拍半",
-    "half:1": "本来唱 2 拍，加上这个点一共唱 3 拍",
-    "whole:1": "本来唱 4 拍，加上这个点一共唱 6 拍",
-    "eighth:1": "本来唱半拍，加上这个点一共唱 3/4 拍",
-    "quarter:2": "两个点，一共唱 1 又 3/4 拍",
+  const hold: Record<string, MessageKey> = {
+    "quarter:1": "dotQuarter",
+    "half:1": "dotHalf",
+    "whole:1": "dotWhole",
+    "eighth:1": "dotEighth",
+    "quarter:2": "dotQuarter2",
   };
-  const text = hold[`${written}:${note.dots}`] ?? "这个音再延长自己的一半";
-  const contrast = note.symbols.some((item) => item.code === "staccato") ? "" : "，不是跳音";
-  return `右边的小点是附点${contrast}。${text}。按住不要太早松开。`;
+  const key = hold[`${written}:${note.dots}`];
+  const text = key ? t(key) : t("dotGeneric");
+  const contrast = note.symbols.some((item) => item.code === "staccato") ? "" : t("notStaccato");
+  return t("dotLine", { contrast, text });
 }
 
 function collectSymbols(graphical: DrawableNote | null): ScoreSymbol[] {

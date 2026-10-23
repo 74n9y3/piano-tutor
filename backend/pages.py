@@ -6,6 +6,8 @@ import copy
 
 from music21 import clef, key, meter, note, stream
 
+from backend.i18n import t
+from backend.i18n import t
 from backend.score_ops import ScoreError
 
 
@@ -19,11 +21,11 @@ def merge_page_scores(scores: list[stream.Score]) -> tuple[stream.Score, list[tu
     through, ignoring the numbers homr wrote on each page.
     """
     if not scores:
-        raise ScoreError("没有可以拼起来的谱")
+        raise ScoreError(t("nothing_to_merge"))
     page_parts = [_parts(score) for score in scores]
     width = max((len(parts) for parts in page_parts), default=0)
     if width == 0:
-        raise ScoreError("这些页里没有谱表")
+        raise ScoreError(t("no_staves"))
     merged_parts = [stream.Part(id=f"P{index + 1}") for index in range(width)]
     spans: list[tuple[int, int] | None] = []
     next_number = 1
@@ -48,7 +50,7 @@ def merge_page_scores(scores: list[stream.Score]) -> tuple[stream.Score, list[tu
         spans.append((start, next_number + page_length - 1))
         next_number += page_length
     if next_number == 1:
-        raise ScoreError("这些页里没有小节")
+        raise ScoreError(t("no_measures"))
     score = stream.Score()
     for part in merged_parts:
         score.insert(0, part)

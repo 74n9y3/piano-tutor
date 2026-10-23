@@ -6,6 +6,8 @@ from pathlib import Path
 
 from PIL import Image, ImageOps
 
+from backend.i18n import t
+
 
 class OmrError(Exception):
     pass
@@ -29,7 +31,7 @@ def prepare_image(src: Path, dest: Path) -> None:
             dest.parent.mkdir(parents=True, exist_ok=True)
             image.save(dest, "PNG")
     except Exception as exc:
-        raise OmrError("这张图片打不开。请换一张 JPG 或 PNG。") from exc
+        raise OmrError(t("image_unreadable")) from exc
 
 
 def find_uvx() -> str | None:
@@ -46,7 +48,7 @@ def recognize(image_path: Path, dest_xml: Path) -> None:
     """Run homr in its own environment. The first photo downloads the models."""
     uvx = find_uvx()
     if uvx is None:
-        raise OmrError("没有找到 uv，暂时不能识谱。请先安装 uv，或改用 MusicXML 导入。")
+        raise OmrError(t("uv_missing"))
     work = image_path.parent / "omr-work"
     if work.exists():
         shutil.rmtree(work)
@@ -63,7 +65,7 @@ def recognize(image_path: Path, dest_xml: Path) -> None:
             check=False,
         )
     except subprocess.TimeoutExpired as exc:
-        raise OmrError("识谱超过 20 分钟还没结束。可以先裁成一页最清楚的谱子再试。") from exc
+        raise OmrError(t("omr_timeout")) from exc
     candidates = [
         path
         for path in work.iterdir()
@@ -71,7 +73,7 @@ def recognize(image_path: Path, dest_xml: Path) -> None:
     ]
     if completed.returncode != 0 or not candidates:
         detail = _tail(completed.stderr or completed.stdout)
-        message = "识谱没有成功。请换一张平整、光线均匀的照片，让五线谱尽量占满画面。"
+        message = t("omr_failed")
         if detail:
             message = f"{message}\n{detail}"
         raise OmrError(message)

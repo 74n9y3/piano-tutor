@@ -26,7 +26,8 @@ export type IconName =
   | "arrowUp"
   | "arrowRight"
   | "refresh"
-  | "chat";
+  | "chat"
+  | "globe";
 
 const PATHS: Record<IconName, string> = {
   play: `<path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/>`,
@@ -57,6 +58,7 @@ const PATHS: Record<IconName, string> = {
   arrowRight: `<path d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>`,
   refresh: `<path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>`,
   chat: `<path d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"/>`,
+  globe: `<path d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418"/>`,
 };
 
 export function ensureIcon(button: HTMLElement, name: IconName): void {
@@ -104,6 +106,7 @@ export function setButtonFace(button: HTMLElement, name: IconName, text?: string
     button.append(label);
   }
   label.textContent = text;
+  if (button.hasAttribute("aria-label")) button.setAttribute("aria-label", text);
   for (const node of Array.from(button.childNodes)) {
     if (node !== mark && node !== label) node.remove();
   }

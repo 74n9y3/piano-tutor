@@ -1,4 +1,5 @@
 import { api, sleep } from "./api";
+import { bootLocale, dictionaries, onLocale, setLocale, t, type MessageKey } from "./i18n";
 import { ensureIcon, setButtonFace, type IconName } from "./icons";
 import { loadPiano, PitchListener, Player, TakeRecorder, playMidi } from "./audio";
 import { decideFollow, decideFollowNote, initialListen, type ListenState } from "./follow";
@@ -75,15 +76,46 @@ let openAskId: string | null = null;
 let ignoreScoreClick = false;
 let drag: { x: number; y: number; left: number; top: number } | null = null;
 
-const DURATIONS: Array<[string, string]> = [
-  ["whole", "全音符"],
-  ["half", "二分音符"],
-  ["quarter", "四分音符"],
-  ["eighth", "八分音符"],
-];
+function durationChoices(): Array<[string, string]> {
+  return [
+    ["whole", t("whole")],
+    ["half", t("half")],
+    ["quarter", t("quarter")],
+    ["eighth", t("eighth")],
+  ];
+}
+
+type StatusParams = Record<string, string | number>;
+
+let statusKey: MessageKey | null = null;
+let statusParams: StatusParams | undefined;
+
+function statusKeyFor(message: string): MessageKey | null {
+  const books = dictionaries();
+  for (const key of Object.keys(books["zh-CN"]) as MessageKey[]) {
+    if (books["zh-CN"][key] === message || books.en[key] === message) return key;
+  }
+  return null;
+}
 
 function setStatus(message: string): void {
+  statusKey = statusKeyFor(message);
+  statusParams = undefined;
   status.textContent = message;
+}
+
+function setStatusKey(key: MessageKey, params?: StatusParams): void {
+  statusKey = key;
+  statusParams = params;
+  status.textContent = t(key, params);
+}
+
+function refreshStatus(): void {
+  if (statusKey) {
+    status.textContent = t(statusKey, statusParams);
+    return;
+  }
+  if (!welcome.hidden) setStatusKey("tagline");
 }
 
 function showRead(open: boolean): void {
@@ -95,13 +127,13 @@ function syncPhotoToggle(): void {
   const button = el<HTMLButtonElement>("photoToggle");
   const open = Boolean(piece?.hasPhoto) && !el("stage").classList.contains("photo-collapsed");
   el("photoToggleItem").hidden = !piece?.hasPhoto;
-  setButtonFace(button, open ? "eye" : "photo", open ? "只看谱" : "对照原图");
+  setButtonFace(button, open ? "eye" : "photo", open ? t("hidePhoto") : t("showPhoto"));
   button.setAttribute("aria-pressed", String(open));
 }
 
 function syncRangeLabel(): void {
   const { start, end } = range();
-  el("rangeLabel").textContent = start === end ? `第 ${start} 小节` : `第 ${start}–${end} 小节`;
+  el("rangeLabel").textContent = start === end ? t("measureOne", { n: start }) : t("measureRange", { start, end });
 }
 
 function resetDeleteConfirm(): void {
@@ -151,8 +183,8 @@ function stopPlayback(): void {
   player?.stop();
   current = new Set();
   const playButton = el<HTMLButtonElement>("play");
-  setButtonFace(playButton, "play", "播放");
-  playButton.setAttribute("aria-label", "播放");
+  setButtonFace(playButton, "play", t("play"));
+  playButton.setAttribute("aria-label", t("play"));
   playButton.classList.remove("is-live");
 }
 
@@ -162,16 +194,16 @@ async function stopFollow(): Promise<void> {
   listener.stop();
   el("followBanner").hidden = true;
   const follow = el<HTMLButtonElement>("follow");
-  setButtonFace(follow, "note", "跟弹");
-  follow.setAttribute("aria-label", "跟弹");
+  setButtonFace(follow, "note", t("follow"));
+  follow.setAttribute("aria-label", t("follow"));
   follow.classList.remove("is-live");
 }
 
 function stopRecordClock(): void {
   window.clearInterval(recordClock);
   const record = el<HTMLButtonElement>("record");
-  setButtonFace(record, "mic", "录音检查");
-  record.setAttribute("aria-label", "录音检查");
+  setButtonFace(record, "mic", t("record"));
+  record.setAttribute("aria-label", t("record"));
   record.classList.remove("is-live");
 }
 
@@ -182,9 +214,9 @@ function setAskMode(on: boolean): void {
   el("askHint").hidden = !on;
   el("scoreSheet").classList.toggle("asking", on);
   const button = el<HTMLButtonElement>("askMark");
-  setButtonFace(button, on ? "x" : "viewfinder", on ? "取消圈选" : "圈记号");
+  setButtonFace(button, on ? "x" : "viewfinder", on ? t("cancelCircle") : t("circle"));
   button.setAttribute("aria-pressed", String(on));
-  if (on) setStatus("点一下谱上的记号。音符旁边的点、线、数字和字都会说明。");
+  if (on) setStatus(t("circleHint"));
 }
 
 async function stopActivities(): Promise<void> {
@@ -219,10 +251,10 @@ function watchList(): void {
 }
 
 function pieceKind(item: Piece): string {
-  if (item.hasPhoto) return "照片";
+  if (item.hasPhoto) return t("kindPhoto");
   if (item.source === "midi") return "MIDI";
-  if (item.source === "improv") return "即兴";
-  return "乐谱";
+  if (item.source === "improv") return t("kindImprov");
+  return t("kindScore");
 }
 
 function pieceKindKey(item: Piece): string {
@@ -235,11 +267,11 @@ function pieceKindKey(item: Piece): string {
 function pieceWhen(created: string): string {
   const date = new Date(created);
   if (Number.isNaN(date.getTime())) return "";
-  return `${date.getMonth() + 1}月${date.getDate()}日`;
+  return t("date", { month: date.getMonth() + 1, day: date.getDate() });
 }
 
 function pageCountLabel(item: Piece): string {
-  return (item.pageCount ?? 0) > 1 ? `${item.pageCount} 页` : "";
+  return (item.pageCount ?? 0) > 1 ? t("pagesCount", { count: item.pageCount ?? 0 }) : "";
 }
 
 function pieceState(item: Piece): string {
@@ -247,25 +279,24 @@ function pieceState(item: Piece): string {
   if (busy) {
     if ((item.pageCount ?? 0) > 1) {
       const done = (item.pages ?? []).filter((page) => page.status === "ready" || page.status === "failed").length;
-      return `识别中 ${done}/${item.pageCount} 页`;
+      return t("recognizingPages", { done, total: item.pageCount ?? 0 });
     }
-    return item.source === "improv" ? "写谱中" : "识谱中";
+    return item.source === "improv" ? t("writingScore") : t("readingScore");
   }
-  if (item.status === "partial") return "部分失败";
-  if (item.status === "failed") return "未成功";
+  if (item.status === "partial") return t("partial");
+  if (item.status === "failed") return t("failed");
   return "";
 }
 
-function recognizeStatus(item: Piece): string {
+function recognizeStatus(item: Piece): void {
   const total = item.pageCount ?? 0;
   if (total > 1) {
     const done = (item.pages ?? []).filter((page) => page.status === "ready" || page.status === "failed").length;
     const currentPage = Math.min(total, done + 1);
-    return `正在识谱，第 ${currentPage} 页，共 ${total} 页。`;
+    setStatusKey("readingPage", { page: currentPage, total });
+    return;
   }
-  return item.source === "improv"
-    ? "正在把弹的写成谱。第一次听音会久一点。"
-    : "正在识谱。第一次会下载模型，可能要几分钟。";
+  setStatusKey(item.source === "improv" ? "writingLong" : "readingLong");
 }
 
 function visiblePieces(): Piece[] {
@@ -279,19 +310,19 @@ function visiblePieces(): Piece[] {
 function renderCatalog(): void {
   const shown = visiblePieces();
   const count = el("libraryCount");
-  count.textContent = catalog.length ? `${shown.length} 首` : "";
+  count.textContent = catalog.length ? t("pieceCount", { count: shown.length }) : "";
   pieceList.replaceChildren();
   if (!catalog.length) {
     const empty = document.createElement("p");
     empty.className = "hint catalog-empty";
-    empty.textContent = "曲库是空的。用右上角的新增曲子放进第一首。";
+    empty.textContent = t("emptyLibrary");
     pieceList.append(empty);
     return;
   }
   if (!shown.length) {
     const empty = document.createElement("p");
     empty.className = "hint catalog-empty";
-    empty.textContent = "没有符合的曲子。";
+    empty.textContent = t("noMatches");
     pieceList.append(empty);
     return;
   }
@@ -313,7 +344,7 @@ function catalogRow(item: Piece): HTMLElement {
     input.className = "input input-bordered input-sm catalog-rename";
     input.value = item.title;
     input.maxLength = 40;
-    input.setAttribute("aria-label", "曲名");
+    input.setAttribute("aria-label", t("pieceTitle"));
     const field = input;
     let cancel = false;
     field.addEventListener("keydown", (event) => {
@@ -350,17 +381,17 @@ function catalogRow(item: Piece): HTMLElement {
   actions.className = "catalog-actions";
   if (pendingDelete === item.id) {
     actions.append(
-      actionButton("确认删除", "trash", "btn btn-error btn-xs", () => void removeFromLibrary(item.id)),
-      actionButton("取消", "x", "btn btn-ghost btn-xs", () => {
+      actionButton(t("confirmDeleteButton"), "trash", "btn btn-error btn-xs", () => void removeFromLibrary(item.id)),
+      actionButton(t("cancel"), "x", "btn btn-ghost btn-xs", () => {
         pendingDelete = null;
         renderCatalog();
       }),
     );
   } else if (renamingId === item.id) {
-    const save = actionButton("保存", "check", "btn btn-primary btn-xs", () => {
+    const save = actionButton(t("save"), "check", "btn btn-primary btn-xs", () => {
       if (input) void commitLibraryRename(item.id, input.value);
     });
-    const cancelEdit = actionButton("取消", "x", "btn btn-ghost btn-xs", () => {
+    const cancelEdit = actionButton(t("cancel"), "x", "btn btn-ghost btn-xs", () => {
       renamingId = null;
       renderCatalog();
     });
@@ -400,8 +431,8 @@ function rowMenu(item: Piece): HTMLElement {
   const trigger = document.createElement("button");
   trigger.type = "button";
   trigger.className = "btn btn-ghost btn-sm btn-square";
-  trigger.setAttribute("aria-label", `${item.title}的更多操作`);
-  trigger.title = "更多";
+  trigger.setAttribute("aria-label", t("moreOf", { title: item.title }));
+  trigger.title = t("more");
   setButtonFace(trigger, "ellipsis");
   const menu = document.createElement("ul");
   menu.tabIndex = 0;
@@ -410,15 +441,15 @@ function rowMenu(item: Piece): HTMLElement {
   rule.className = "menu-rule";
   rule.setAttribute("aria-hidden", "true");
   menu.append(
-    menuButton("导出", "download", "", () => void exportScore(item.id, item.title)),
-    menuButton("打开目录", "folder", "", () => void revealFolder(item.id)),
-    menuButton("改名", "pencil", "", () => {
+    menuButton(t("export"), "download", "", () => void exportScore(item.id, item.title)),
+    menuButton(t("openFolder"), "folder", "", () => void revealFolder(item.id)),
+    menuButton(t("rename"), "pencil", "", () => {
       pendingDelete = null;
       renamingId = item.id;
       renderCatalog();
     }),
     rule,
-    menuButton("删除", "trash", "text-error", () => {
+    menuButton(t("delete"), "trash", "text-error", () => {
       renamingId = null;
       pendingDelete = item.id;
       renderCatalog();
@@ -429,7 +460,7 @@ function rowMenu(item: Piece): HTMLElement {
 }
 
 function scoreFilename(title: string): string {
-  const cleaned = title.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim() || "曲子";
+  const cleaned = title.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim() || t("fallbackTitle");
   return `${cleaned}.musicxml`;
 }
 
@@ -443,18 +474,18 @@ async function exportScore(id: string, title: string): Promise<void> {
     link.download = scoreFilename(title);
     link.click();
     URL.revokeObjectURL(url);
-    setStatus("谱子已导出。");
+    setStatus(t("exported"));
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "没有导出");
+    setStatus(error instanceof Error ? error.message : t("exportFailed"));
   }
 }
 
 async function revealFolder(id: string): Promise<void> {
   try {
     await api.reveal(id);
-    setStatus("已在访达中打开这首曲子的文件夹。");
+    setStatus(t("folderOpened"));
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "文件夹没有打开");
+    setStatus(error instanceof Error ? error.message : t("folderFailed"));
   }
 }
 async function commitLibraryRename(id: string, title: string): Promise<void> {
@@ -467,10 +498,10 @@ async function commitLibraryRename(id: string, title: string): Promise<void> {
   try {
     await api.rename(id, next);
     if (piece?.id === id) piece = { ...piece, title: next };
-    setStatus("曲名改好了。");
+    setStatus(t("renamed"));
     await refreshList();
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "曲名没改成");
+    setStatus(error instanceof Error ? error.message : t("renameFailed"));
     renderCatalog();
   }
 }
@@ -480,10 +511,10 @@ async function removeFromLibrary(id: string): Promise<void> {
   try {
     await api.remove(id);
     if (piece?.id === id) piece = null;
-    setStatus("这首已经从曲库删掉。");
+    setStatus(t("removedFromLibrary"));
     await refreshList();
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "没有删掉");
+    setStatus(error instanceof Error ? error.message : t("removeFailed"));
   }
 }
 
@@ -507,13 +538,13 @@ async function openPiece(id: string): Promise<void> {
   photoPage = 1;
   photoFollowId = null;
   if (piece.status === "recognizing" || (piece.pages ?? []).some((page) => page.status === "waiting" || page.status === "recognizing")) {
-    setStatus(recognizeStatus(piece));
+    recognizeStatus(piece);
     showPhoto();
     await pollPiece(id);
     return;
   }
   if (piece.status === "failed") {
-    setStatus(piece.error || "识谱没有成功");
+    setStatus(piece.error || t("recognizeFailed"));
     showPhoto();
     return;
   }
@@ -545,7 +576,7 @@ function beginTitleEdit(): void {
   input.value = piece.title;
   input.focus();
   input.select();
-  setStatus("改完按回车。不想改就按 Esc。");
+  setStatus(t("titleHint"));
 }
 
 async function commitTitle(): Promise<void> {
@@ -559,9 +590,9 @@ async function commitTitle(): Promise<void> {
     piece = await api.rename(piece.id, next);
     renderPieceChrome();
     await showScore();
-    setStatus("标题改好了。");
+    setStatus(t("titleSaved"));
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "标题没改成");
+    setStatus(error instanceof Error ? error.message : t("titleFailed"));
   }
 }
 
@@ -591,7 +622,7 @@ function showPhotoPage(page: number): void {
   const total = Math.max(1, piece.pageCount || piece.pages?.length || 1);
   photoPage = Math.min(total, Math.max(1, page));
   el<HTMLImageElement>("photo").src = `/api/pieces/${piece.id}/photo?page=${photoPage}&t=${Date.now()}`;
-  el("photoPageLabel").textContent = `第 ${photoPage}/${total} 页`;
+  el("photoPageLabel").textContent = t("pageOf", { page: photoPage, total });
   el("photoPager").hidden = total < 2;
   el<HTMLButtonElement>("photoPrev").disabled = photoPage <= 1;
   el<HTMLButtonElement>("photoNext").disabled = photoPage >= total;
@@ -623,9 +654,9 @@ async function showScore(): Promise<void> {
   await scoreView.load(xml, notes(), zoom);
   const matched = scoreView.matchedCount();
   if (notes().length && matched < notes().length) {
-    setStatus("谱子打开了。有的音符点不中时，可以先听播放，再改能点到的音。");
+    setStatus(t("scoreOpenedRough"));
   } else {
-    setStatus("点一个音，下面的琴键会亮。简谱数字在每行五线谱的下面。");
+    setStatus(t("scoreOpened"));
   }
   paint();
   renderExplain();
@@ -641,7 +672,7 @@ async function pollPiece(id: string): Promise<void> {
     const busy = latest.status === "recognizing" || (latest.pages ?? []).some((page) => page.status === "waiting" || page.status === "recognizing");
     if (busy) {
       piece = latest;
-      setStatus(recognizeStatus(latest));
+      recognizeStatus(latest);
       renderPageManager();
       const active = (latest.pages ?? []).find((page) => page.status === "recognizing");
       if (active) showPhotoPage(active.index);
@@ -652,14 +683,14 @@ async function pollPiece(id: string): Promise<void> {
     if (latest.status === "ready" || latest.status === "partial") {
       setStatus(
         latest.status === "partial"
-          ? latest.error || "有的页没有识别成功。"
+          ? latest.error || t("partialReady")
           : latest.source === "improv"
-            ? "写成谱了。中央 C 和更高的音在上面一行。听一遍，点不对的音可以改，多出来的音可以去掉。"
-            : "认完了。请对着原图听一遍，再改不对的音。",
+            ? t("improvReady")
+            : t("photoReady"),
       );
       await showScore();
     } else {
-      setStatus(latest.error || "识谱没有成功");
+      setStatus(latest.error || t("recognizeFailed"));
       showPhoto();
     }
     await refreshList();
@@ -694,7 +725,7 @@ function renderSelection(): void {
   const note = notes().find((item) => item.id === selectedId);
   el("editor").hidden = !note;
   if (!note) return;
-  const where = note.measure === 0 ? "弱起" : `第 ${note.measure} 小节`;
+  const where = note.measure === 0 ? t("pickup") : t("measureOne", { n: note.measure });
   el("selectionName").textContent = `${where} · ${pitchLabel(note.name)}`;
   const mapped = scoreView.mapped.find((item) => item.id === note.id);
   const caption = [mapped ? symbolCaption(mapped) : "", mapped ? accidentalCaption(mapped) : "", mapped ? dotCaption(mapped) : ""]
@@ -703,10 +734,10 @@ function renderSelection(): void {
   const dotHint = el("dotHint");
   dotHint.hidden = !caption;
   dotHint.textContent = caption;
-  setButtonFace(el("askNote"), "chat", "让 AI 说明");
+  setButtonFace(el("askNote"), "chat", t("askNote"));
   const row = el("durations");
   row.replaceChildren();
-  for (const [value, label] of DURATIONS) {
+  for (const [value, label] of durationChoices()) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "btn btn-sm join-item";
@@ -729,14 +760,20 @@ function showTake(result: TakeResult): void {
   el("review").hidden = false;
   el("reviewBar").hidden = false;
   const summary = result.summary;
-  const tempo = result.heardBpm ? `按这一遍自己的速度，大约每分钟 ${result.heardBpm} 拍。慢一点但均匀的音不会被标出来。` : "";
-  el("reviewSummary").textContent =
-    `${summary.ok} 个音对上了，${summary.wrong_pitch} 个音高不对，${summary.missing} 个没听到，${summary.rhythm} 个节奏差得比较多，多弹了 ${summary.extra} 个。${tempo}`;
+  const tempo = result.heardBpm ? t("reviewTempo", { bpm: result.heardBpm }) : "";
+  el("reviewSummary").textContent = t("reviewSummary", {
+    ok: summary.ok,
+    wrong: summary.wrong_pitch,
+    missing: summary.missing,
+    rhythm: summary.rhythm,
+    extra: summary.extra,
+    tempo,
+  });
   const extras = el("reviewExtras");
   extras.replaceChildren();
   for (const extra of result.extras) {
     const item = document.createElement("li");
-    item.textContent = `多弹了 ${midiLabel(extra.midi)}，大约在第 ${extra.onset.toFixed(1)} 秒。`;
+    item.textContent = t("extraNote", { name: midiLabel(extra.midi), onset: extra.onset.toFixed(1) });
     extras.append(item);
   }
   let legend = el("review").querySelector(".legend");
@@ -744,9 +781,9 @@ function showTake(result: TakeResult): void {
     legend = document.createElement("div");
     legend.className = "legend";
     for (const [name, label] of [
-      ["wrong", "音高不对"],
-      ["missing", "没听到"],
-      ["rhythm", "节奏差一截"],
+      ["wrong", t("wrongPitch")],
+      ["missing", t("missingNote")],
+      ["rhythm", t("rhythmOff")],
     ] as const) {
       const chip = document.createElement("span");
       chip.className = name;
@@ -766,8 +803,8 @@ function updateSpeedLabel(): void {
   const speed = Number(el<HTMLInputElement>("speed").value);
   const bpm = Math.round((piece?.bpm ?? 72) * speed);
   el("speedLabel").textContent = String(bpm);
-  el("speedLabel").title = `约每分钟 ${bpm} 拍`;
-  el("speed").title = `约每分钟 ${bpm} 拍`;
+  el("speedLabel").title = t("bpmTitle", { bpm });
+  el("speed").title = t("bpmTitle", { bpm });
 }
 
 function showImprov(open: boolean): void {
@@ -786,13 +823,13 @@ async function startImprov(): Promise<void> {
   const session = ++improvSession;
   showImprov(true);
   el("improvClock").textContent = "0:00";
-  setStatus("正在打开麦克风…");
+  setStatus(t("openingMic"));
   try {
     await recorder.start();
   } catch {
     if (session !== improvSession) return;
     showImprov(false);
-    setStatus("没有用上麦克风。请允许使用麦克风后再试。");
+    setStatus(t("micSettings"));
     return;
   }
   if (session !== improvSession) {
@@ -802,7 +839,7 @@ async function startImprov(): Promise<void> {
   improvising = true;
   improvStarted = performance.now();
   el<HTMLButtonElement>("improvStop").disabled = false;
-  setStatus("正在录音。弹完点停止。");
+  setStatus(t("recordingNow"));
   window.clearInterval(improvClock);
   improvClock = window.setInterval(() => {
     const seconds = Math.floor((performance.now() - improvStarted) / 1000);
@@ -818,13 +855,13 @@ async function finishImprov(): Promise<void> {
   window.clearInterval(improvClock);
   const wav = recorder.stop();
   showImprov(false);
-  setStatus("正在把弹的写成谱…");
+  setStatus(t("writingImprov"));
   try {
     const created = await api.improv(wav);
     await refreshList();
     await openPiece(created.id);
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "没能写成谱，请再录一次。");
+    setStatus(error instanceof Error ? error.message : t("improvFailed"));
   }
 }
 
@@ -834,7 +871,7 @@ function cancelImprov(): void {
   window.clearInterval(improvClock);
   recorder.stop();
   showImprov(false);
-  setStatus("录音取消了。");
+  setStatus(t("recordingCancelled"));
 }
 
 async function edit(change: { semitone?: number; duration?: string }): Promise<void> {
@@ -845,9 +882,9 @@ async function edit(change: { semitone?: number; duration?: string }): Promise<v
     selectedId = piece.notes?.some((note) => note.id === keep) ? keep : null;
     renderPieceChrome();
     await showScore();
-    setStatus("改好了。再听一遍确认。");
+    setStatus(t("edited"));
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "没有改成");
+    setStatus(error instanceof Error ? error.message : t("editFailed"));
   }
 }
 
@@ -858,9 +895,9 @@ async function removeSelected(): Promise<void> {
     selectedId = null;
     renderPieceChrome();
     await showScore();
-    setStatus("这个音去掉了。再听一遍确认。");
+    setStatus(t("noteRemoved"));
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "没有去掉");
+    setStatus(error instanceof Error ? error.message : t("removeNoteFailed"));
   }
 }
 
@@ -874,31 +911,31 @@ async function play(): Promise<void> {
   if (recording) return;
   const selected = notesInRange().filter((note) => note.attack);
   if (!selected.length) {
-    setStatus("这个小节范围里没有音。");
+    setStatus(t("noNotesInRange"));
     return;
   }
-  setStatus("正在准备钢琴声音…");
+  setStatus(t("preparingPiano"));
   try {
     player = new Player(await loadPiano());
     const playButton = el<HTMLButtonElement>("play");
-    setButtonFace(playButton, "stop", "停止");
-    playButton.setAttribute("aria-label", "停止");
+    setButtonFace(playButton, "stop", t("stop"));
+    playButton.setAttribute("aria-label", t("stop"));
     playButton.classList.add("is-live");
-    setStatus("正在播放选定的小节。");
+    setStatus(t("playingRange"));
     await player.play(selected, piece?.bpm ?? 72, Number(el<HTMLInputElement>("speed").value), (ids) => {
       current = new Set(ids);
       paint();
       if (!ids.length && !player?.playing) {
         const done = el<HTMLButtonElement>("play");
-        setButtonFace(done, "play", "播放");
-        done.setAttribute("aria-label", "播放");
+        setButtonFace(done, "play", t("play"));
+        done.setAttribute("aria-label", t("play"));
         done.classList.remove("is-live");
-        setStatus("播放结束。");
+        setStatus(t("playDone"));
       }
     });
   } catch (error) {
     stopPlayback();
-    setStatus(error instanceof Error ? error.message : "钢琴声音没有准备好");
+    setStatus(error instanceof Error ? error.message : t("pianoFailed"));
   }
 }
 
@@ -907,14 +944,14 @@ async function toggleFollow(): Promise<void> {
     await stopFollow();
     current = new Set();
     paint();
-    setStatus("跟弹停了。");
+    setStatus(t("followStopped"));
     return;
   }
   stopPlayback();
   if (recording) return;
   followList = notesInRange().filter((note) => note.attack);
   if (!followList.length) {
-    setStatus("这个小节范围里没有可以跟的单音。");
+    setStatus(t("noFollowNotes"));
     return;
   }
   followIndex = 0;
@@ -922,18 +959,18 @@ async function toggleFollow(): Promise<void> {
   review = new Map();
   following = true;
   const followButton = el<HTMLButtonElement>("follow");
-  setButtonFace(followButton, "stop", "停止");
-  followButton.setAttribute("aria-label", "停止跟弹");
+  setButtonFace(followButton, "stop", t("stop"));
+  followButton.setAttribute("aria-label", t("stopFollow"));
   followButton.classList.add("is-live");
   updateFollowBanner(null, null);
-  setStatus("正在打开麦克风…");
+  setStatus(t("openingMic"));
   try {
     await listener.start((midi) => onFollowPitch(midi));
     updateFollowBanner(null, null);
-    setStatus("一次对一个音。弹对了会走到下一个。");
+    setStatus(t("followReady"));
   } catch {
     updateFollowBanner(null, null);
-    setStatus("没有麦克风，可以点屏幕琴键或用电脑键盘弹");
+    setStatus(t("noMicFollow"));
   }
 }
 
@@ -972,7 +1009,7 @@ function applyFollowDecision(
       void stopFollow();
       current = new Set();
       paint();
-      setStatus("这一遍跟弹完成。");
+      setStatus(t("followDone"));
       return;
     }
   } else if (action === "wrong") {
@@ -1020,7 +1057,7 @@ function typingTarget(target: EventTarget | null): boolean {
 
 function shiftKeyboardOctave(delta: number): void {
   keyboardOctave = Math.min(7, Math.max(1, keyboardOctave + delta));
-  setStatus(`电脑键盘从 ${midiName((keyboardOctave + 1) * 12)} 开始。`);
+  setStatusKey("keyboardFrom", { name: midiName((keyboardOctave + 1) * 12) });
 }
 
 function updateFollowBanner(hint: string | null, heard: number | null): void {
@@ -1031,13 +1068,14 @@ function updateFollowBanner(hint: string | null, heard: number | null): void {
     return;
   }
   current = new Set([target.id]);
-  const where = target.measure === 0 ? "弱起" : `第 ${target.measure} 小节`;
+  const where = target.measure === 0 ? t("pickup") : t("measureOne", { n: target.measure });
   const same = followList[followIndex - 1] && Math.abs(followList[followIndex - 1].offset - target.offset) < 0.01
-    ? "这个音和前一个音写在一起，跟弹时分开对。"
+    ? t("chordTogether")
     : "";
-  const heardText = heard !== null ? `听到的是 ${midiLabel(heard)}。` : "";
+  const heardText = heard !== null ? t("heard", { name: midiLabel(heard) }) : "";
+  const hintText = hint === "same-note" ? t("repeatHint") : (hint ?? "");
   banner.hidden = false;
-  el("followPrompt").textContent = `请弹 ${pitchLabel(target.name)}。${where}。${same}${heardText}${hint ?? ""}`;
+  el("followPrompt").textContent = `${t("playThis", { name: pitchLabel(target.name), where })}${same}${heardText}${hintText}`;
 }
 
 async function toggleRecord(): Promise<void> {
@@ -1053,7 +1091,7 @@ async function toggleRecord(): Promise<void> {
   try {
     await recorder.start();
   } catch {
-    setStatus("没有拿到麦克风。请在系统设置里允许使用麦克风。");
+    setStatus(t("micDenied"));
     return;
   }
   recording = true;
@@ -1063,17 +1101,17 @@ async function toggleRecord(): Promise<void> {
   const showRecordClock = () => {
     const seconds = Math.round((performance.now() - recordStarted) / 1000);
     setButtonFace(button, "stop", formatClock(seconds));
-    button.setAttribute("aria-label", `停止并检查，已录 ${seconds} 秒`);
+    button.setAttribute("aria-label", t("stopRecord", { seconds }));
   };
   showRecordClock();
   recordClock = window.setInterval(showRecordClock, 250);
-  setStatus("正在录音。弹完选定的小节后再停止。");
+  setStatus(t("recording"));
 }
 
 async function analyze(wav: Blob): Promise<void> {
   if (!piece) return;
   const { start, end } = range();
-  setStatus("正在听刚才那一遍。第一次会下载钢琴模型，请稍等。");
+  setStatus(t("listening"));
   try {
     const created = await api.take(piece.id, wav, start, end);
     let take = created;
@@ -1082,13 +1120,13 @@ async function analyze(wav: Blob): Promise<void> {
       take = await api.takeStatus(piece.id, take.id);
     }
     if (take.status !== "ready" || !take.result) {
-      setStatus(take.error || "听音分析没有完成");
+      setStatus(take.error || t("analyzeFailed"));
       return;
     }
     showTake(take.result);
-    setStatus("标记好了。红色是音高，灰色是没听到，紫色是节奏差得比较多。");
+    setStatus(t("marked"));
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "听音分析没有完成");
+    setStatus(error instanceof Error ? error.message : t("analyzeFailed"));
   }
 }
 
@@ -1111,38 +1149,38 @@ async function explainMarks(
     paint();
   }
   const spot = anchorFor(noteId) ?? anchor;
-  if (spot) showBubble(spot, "正在说明…", noteId);
-  setStatus("正在说明这个记号…");
+  if (spot) showBubble(spot, t("explaining"), noteId);
+  setStatus(t("explainingStatus"));
   try {
     const result = await api.marks(piece.id, marks);
-    const answer = result.text || result.message || "没有解释出来。";
+    const answer = result.text || result.message || t("noExplanation");
     const where = anchorFor(noteId) ?? spot;
     if (where) showBubble(where, answer, noteId);
     const saved = await api.saveAsk(piece.id, { label: askLabel(marks), text: answer, noteId });
     asks = [saved, ...asks.filter((item) => item.id !== saved.id)].slice(0, 40);
     openAskId = saved.id;
     renderAsks();
-    setStatus(result.mode === "model" ? "说明在记号旁边。问过的都留在读谱栏。" : "没连上 AI，先显示谱上认出来的说明。");
+    setStatus(result.mode === "model" ? t("explainedModel") : t("explainedLocal"));
   } catch (error) {
     hideBubble();
-    setStatus(error instanceof Error ? error.message : "这个记号没有解释出来");
+    setStatus(error instanceof Error ? error.message : t("explainFailed"));
   }
 }
 
 function askLabel(marks: ScoreMark[]): string {
   const first = marks[0];
-  if (!first) return "记号";
+  if (!first) return t("mark");
   if (first.kind === "note" || first.kind === "dot") {
-    const hand = first.hand === "left" ? "左手" : first.hand === "right" ? "右手" : "";
-    const measure = first.measure ? `第${first.measure}小节` : "";
-    const name = first.name ?? "音符";
-    const extra = marks.length > 1 ? ` 等${marks.length}个` : "";
+    const hand = first.hand === "left" ? t("leftHand") : first.hand === "right" ? t("rightHand") : "";
+    const measure = first.measure ? t("measureHand", { measure: first.measure }) : "";
+    const name = first.name ?? t("note");
+    const extra = marks.length > 1 ? t("andMore", { count: marks.length }) : "";
     return `${measure} ${hand} ${name}${extra}`.replace(/\s+/g, " ").trim();
   }
-  if (first.kind === "clef") return first.clef === "bass" ? "低音谱号" : "高音谱号";
-  if (first.kind === "time") return first.time ? `${first.time} 拍号` : "拍号";
-  if (first.kind === "key") return "调号";
-  return marks.length > 1 ? `记号 等${marks.length}个` : "记号";
+  if (first.kind === "clef") return first.clef === "bass" ? t("bassClef") : t("trebleClef");
+  if (first.kind === "time") return first.time ? t("timeSignature", { time: first.time }) : t("timeSignaturePlain");
+  if (first.kind === "key") return t("keySignature");
+  return marks.length > 1 ? t("marksAndMore", { count: marks.length }) : t("mark");
 }
 
 function anchorFor(noteId: string | null): DOMRect | null {
@@ -1293,11 +1331,11 @@ async function finishAsk(): Promise<void> {
     relative.height,
   );
   if (!picked.marks.length) {
-    setStatus("没有点到谱号、拍号或音符。点一下音符，或它左边的记号、右边的小圆点。");
+    setStatus(t("missedMark"));
     return;
   }
   if (picked.marks.length > 8) {
-    setStatus("框里记号太多。点一下要问的那个音。");
+    setStatus(t("tooManyMarks"));
     return;
   }
   await explainMarks(picked.marks, picked.noteId, anchor);
@@ -1307,7 +1345,7 @@ async function askSelected(): Promise<void> {
   if (!piece || !selectedId) return;
   const marks = scoreView.marksFor(selectedId);
   if (!marks.length) {
-    setStatus("先点谱上的符头，再问这个音。");
+    setStatus(t("clickNoteFirst"));
     return;
   }
   await explainMarks(marks, selectedId);
@@ -1327,12 +1365,12 @@ function takeImageFiles(list: FileList | File[]): File[] {
 function openPageImport(files: File[], append: boolean): void {
   const images = files;
   if (!images.length) {
-    setStatus("请选择图片。");
+    setStatus(t("chooseImage"));
     return;
   }
   if (!append) clearPageDraft();
   if (pageDraft.length + images.length > 12) {
-    setStatus("一次最多 12 页。");
+    setStatus(t("maxPages"));
     return;
   }
   for (const file of images) {
@@ -1369,11 +1407,11 @@ function renderPageDraft(): void {
     thumb.src = page.url;
     thumb.alt = "";
     const label = document.createElement("span");
-    label.textContent = `第 ${index + 1} 页 · ${page.file.name}`;
+    label.textContent = t("draftPage", { n: index + 1, name: page.file.name });
     const actions = document.createElement("div");
-    const up = actionButton("上移", "arrowUp", "btn btn-ghost btn-xs", () => moveDraft(index, -1));
-    const down = actionButton("下移", "arrowDown", "btn btn-ghost btn-xs", () => moveDraft(index, 1));
-    const remove = actionButton("删掉", "trash", "btn btn-ghost btn-xs text-error", () => {
+    const up = actionButton(t("moveUp"), "arrowUp", "btn btn-ghost btn-xs", () => moveDraft(index, -1));
+    const down = actionButton(t("moveDown"), "arrowDown", "btn btn-ghost btn-xs", () => moveDraft(index, 1));
+    const remove = actionButton(t("removePage"), "trash", "btn btn-ghost btn-xs text-error", () => {
       URL.revokeObjectURL(page.url);
       pageDraft.splice(index, 1);
       renderPageDraft();
@@ -1402,7 +1440,7 @@ function renderPageManager(): void {
   const pages = piece?.pages ?? [];
   if (!pages.length) {
     const empty = document.createElement("li");
-    empty.textContent = "这首没有分页照片。";
+    empty.textContent = t("noPagedPhotos");
     list.append(empty);
     return;
   }
@@ -1413,12 +1451,12 @@ function renderPageManager(): void {
     thumb.src = piece ? `/api/pieces/${piece.id}/photo?page=${page.index}&t=${page.status}` : "";
     thumb.alt = "";
     const label = document.createElement("span");
-    const where = page.measureStart && page.measureEnd ? `第 ${page.measureStart}–${page.measureEnd} 小节` : "";
-    const state = page.status === "ready" ? "完成" : page.status === "failed" ? "失败" : page.status === "recognizing" ? "识别中" : "等待";
-    label.textContent = [`第 ${page.index} 页`, state, where, page.error || ""].filter(Boolean).join(" · ");
+    const where = page.measureStart && page.measureEnd ? t("measureRange", { start: page.measureStart, end: page.measureEnd }) : "";
+    const state = page.status === "ready" ? t("pageStateReady") : page.status === "failed" ? t("pageStateFailed") : page.status === "recognizing" ? t("pageStateBusy") : t("pageStateWait");
+    label.textContent = [t("pageLine", { n: page.index }), state, where, page.error || ""].filter(Boolean).join(" · ");
     const actions = document.createElement("div");
-    const again = actionButton("重新识别", "refresh", "btn btn-ghost btn-xs", () => void redoScorePage(page.index));
-    const swap = actionButton("换图片", "camera", "btn btn-ghost btn-xs", () => {
+    const again = actionButton(t("redoPage"), "refresh", "btn btn-ghost btn-xs", () => void redoScorePage(page.index));
+    const swap = actionButton(t("swapImage"), "camera", "btn btn-ghost btn-xs", () => {
       replacePageIndex = page.index;
       el<HTMLInputElement>("pageReplaceFile").click();
     });
@@ -1433,10 +1471,10 @@ async function redoScorePage(index: number): Promise<void> {
   try {
     piece = await api.redoPage(piece.id, index);
     renderPageManager();
-    setStatus(`正在重新识别第 ${index} 页。`);
+    setStatusKey("redoing", { n: index });
     await pollPiece(piece.id);
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "这一页没有重新开始");
+    setStatus(error instanceof Error ? error.message : t("redoFailed"));
   }
 }
 
@@ -1452,51 +1490,79 @@ async function startPageImport(): Promise<void> {
     await refreshList();
     await openPiece(created.id);
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "这些照片没有导入");
+    setStatus(error instanceof Error ? error.message : t("importFailed"));
     el<HTMLButtonElement>("pageImportStart").disabled = false;
   }
 }
 
 function paintIcons(): void {
-  setButtonFace(el("addMenu"), "plus", "新增曲子");
+  setButtonFace(el("addMenu"), "plus", t("addPiece"));
   ensureIcon(el("pickXml"), "document");
   ensureIcon(el("pickMidi"), "queue");
   ensureIcon(el("pickPhoto"), "camera");
   ensureIcon(el("improvStart"), "mic");
-  setButtonFace(el("improvStop"), "stop", "停止并写成谱");
-  setButtonFace(el("improvCancel"), "x", "取消");
+  setButtonFace(el("improvStop"), "stop", t("improvStop"));
+  setButtonFace(el("improvCancel"), "x", t("cancel"));
   setButtonFace(el("back"), "arrowLeft");
-  setButtonFace(el("play"), "play", "播放");
-  setButtonFace(el("follow"), "note", "跟弹");
-  setButtonFace(el("record"), "mic", "录音检查");
+  setButtonFace(el("play"), "play", t("play"));
+  setButtonFace(el("follow"), "note", t("follow"));
+  setButtonFace(el("record"), "mic", t("record"));
   setButtonFace(el("jianpuToggle"), "hash");
   setButtonFace(el("readToggle"), "book");
   setButtonFace(el("moreMenu"), "ellipsis");
   setButtonFace(el("zoomOut"), "minus");
   setButtonFace(el("zoomIn"), "plus");
-  setButtonFace(el("askMark"), "viewfinder", "圈记号");
-  setButtonFace(el("photoToggle"), "photo", "对照原图");
-  setButtonFace(el("pageManage"), "photo", "管理页面");
-  setButtonFace(el("pageImportAdd"), "plus", "继续添加");
-  setButtonFace(el("pageImportStart"), "camera", "开始识别");
-  setButtonFace(el("pageImportCancel"), "x", "取消");
-  setButtonFace(el("pageManagerClose"), "x", "关闭");
-  setButtonFace(el("photoPrev"), "arrowLeft", "上一页");
-  setButtonFace(el("photoNext"), "arrowRight", "下一页");
-  setButtonFace(el("clearMarks"), "undo", "清除标记");
-  setButtonFace(el("exportPiece"), "download", "导出");
-  setButtonFace(el("revealPiece"), "folder", "打开目录");
-  setButtonFace(el("removePiece"), "trash", "删除");
-  setButtonFace(el("confirmRemove"), "trash", "确认删除");
-  setButtonFace(el("cancelRemove"), "x", "取消");
-  setButtonFace(el("down"), "arrowDown", "低半音");
-  setButtonFace(el("up"), "arrowUp", "高半音");
-  setButtonFace(el("askNote"), "chat", "说明");
-  setButtonFace(el("removeNote"), "trash", "去掉");
+  setButtonFace(el("askMark"), "viewfinder", t("circle"));
+  setButtonFace(el("photoToggle"), "photo", t("showPhoto"));
+  setButtonFace(el("pageManage"), "photo", t("managePages"));
+  setButtonFace(el("pageImportAdd"), "plus", t("addMore"));
+  setButtonFace(el("pageImportStart"), "camera", t("startRead"));
+  setButtonFace(el("pageImportCancel"), "x", t("cancel"));
+  setButtonFace(el("pageManagerClose"), "x", t("close"));
+  setButtonFace(el("photoPrev"), "arrowLeft", t("prevPage"));
+  setButtonFace(el("photoNext"), "arrowRight", t("nextPage"));
+  setButtonFace(el("clearMarks"), "undo", t("clearMarks"));
+  setButtonFace(el("exportPiece"), "download", t("export"));
+  setButtonFace(el("revealPiece"), "folder", t("openFolder"));
+  setButtonFace(el("removePiece"), "trash", t("delete"));
+  setButtonFace(el("confirmRemove"), "trash", t("confirmDeleteButton"));
+  setButtonFace(el("cancelRemove"), "x", t("cancel"));
+  setButtonFace(el("down"), "arrowDown", t("lower"));
+  setButtonFace(el("up"), "arrowUp", t("higher"));
+  setButtonFace(el("askNote"), "chat", t("explanation"));
+  setButtonFace(el("removeNote"), "trash", t("removeNote"));
 }
 
 function bind(): void {
   paintIcons();
+  setButtonFace(el("langButton"), "globe");
+  bootLocale();
+  setStatusKey("tagline");
+  el("langZh").addEventListener("click", () => setLocale("zh-CN"));
+  el("langEn").addEventListener("click", () => setLocale("en"));
+  onLocale(() => {
+    paintIcons();
+    setButtonFace(el("langButton"), "globe");
+    syncPhotoToggle();
+    syncRangeLabel();
+    updateSpeedLabel();
+    renderSelection();
+    renderPageManager();
+    if (following) updateFollowBanner(null, null);
+    hideBubble();
+    refreshStatus();
+    void refreshList();
+    if (!piece) return;
+    const id = piece.id;
+    void api.piece(id).then((latest) => {
+      if (piece?.id === id) {
+        piece = latest;
+        renderExplain();
+        renderSelection();
+      }
+    });
+    void loadAsks();
+  });
   el("libraryQuery").addEventListener("input", () => {
     libraryQuery = el<HTMLInputElement>("libraryQuery").value;
     pendingDelete = null;
@@ -1529,7 +1595,7 @@ function bind(): void {
       await refreshList();
       await openPiece(created.id);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "这份谱子打不开");
+      setStatus(error instanceof Error ? error.message : t("scoreOpenFailed"));
     }
   });
   el<HTMLInputElement>("midiFile").addEventListener("change", async (event) => {
@@ -1537,13 +1603,13 @@ function bind(): void {
     const file = input.files?.[0];
     input.value = "";
     if (!file) return;
-    setStatus("正在把 MIDI 写成谱。");
+    setStatus(t("writingMidi"));
     try {
       const created = await api.uploadMidi(file);
       await refreshList();
       await openPiece(created.id);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "这个 MIDI 打不开");
+      setStatus(error instanceof Error ? error.message : t("midiFailed"));
     }
   });
   el<HTMLInputElement>("photoFile").addEventListener("change", (event) => {
@@ -1578,10 +1644,10 @@ function bind(): void {
     try {
       piece = await api.replacePage(piece.id, replacePageIndex, file);
       renderPageManager();
-      setStatus(`正在重新识别第 ${replacePageIndex} 页。`);
+      setStatusKey("redoing", { n: replacePageIndex });
       await pollPiece(piece.id);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "这一页没有换上");
+      setStatus(error instanceof Error ? error.message : t("swapFailed"));
     }
   });
   el("pieceTitle").addEventListener("click", () => beginTitleEdit());
@@ -1614,7 +1680,7 @@ function bind(): void {
     welcome.hidden = false;
     piece = null;
     await refreshList();
-    setStatus("把老师发的谱子拍下来，先听，再跟着弹。");
+    setStatus(t("tagline"));
   });
   el("photoToggle").addEventListener("click", async () => {
     el("stage").classList.toggle("photo-collapsed");
@@ -1685,7 +1751,7 @@ function bind(): void {
     asks = [];
     welcome.hidden = false;
     await refreshList();
-    setStatus("这首已经删掉，只存在这台电脑上的那份也去掉了。");
+    setStatus(t("deletedPiece"));
   });
   el("up").addEventListener("click", () => void edit({ semitone: 1 }));
   el("down").addEventListener("click", () => void edit({ semitone: -1 }));
@@ -1693,7 +1759,7 @@ function bind(): void {
   el("askNote").addEventListener("click", () => void askSelected());
   el("askMark").addEventListener("click", () => {
     if (!piece || (piece.status !== "ready" && piece.status !== "partial")) {
-      setStatus("谱子准备好之后，才能在谱上圈记号。");
+      setStatus(t("circleNeedsScore"));
       return;
     }
     setAskMode(!asking);
@@ -1780,10 +1846,10 @@ let resizeTimer = 0;
 
 bind();
 void refreshList().catch((error: unknown) => {
-  setStatus(error instanceof Error ? error.message : "本地服务还没连上");
+  setStatus(error instanceof Error ? error.message : t("serverDown"));
 });
 void api.health().then((health) => {
   if (!health.transcribe) {
-    setStatus("谱子和播放可以用。整段听音还要先安装 requirements-ml.txt 里的组件。");
+    setStatus(t("transcribeMissing"));
   }
 });

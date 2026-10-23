@@ -11,6 +11,8 @@ from pathlib import Path
 
 from music21 import converter, instrument, meter, stream, tempo
 
+from backend.i18n import t
+from backend.i18n import t
 from backend.notate import quarters_to_score
 
 GRID = 0.25
@@ -24,22 +26,22 @@ class MidiScoreError(Exception):
 
 def score_from_midi(data: bytes, title: str):
     if len(data) < 14 or not data.startswith(b"MThd"):
-        raise MidiScoreError("这不是 MIDI 文件。请选择以 .mid 结尾的文件。")
+        raise MidiScoreError(t("not_midi"))
     if len(data) > MAX_BYTES:
-        raise MidiScoreError("这个 MIDI 太大了。请选一首短一些的。")
+        raise MidiScoreError(t("midi_too_big"))
     parsed = _parse(data)
     groups = _groups(parsed)
     if not groups:
-        raise MidiScoreError("这个 MIDI 里没有找到音符。")
+        raise MidiScoreError(t("midi_no_notes"))
     right, left = _hands(groups)
     beats = _beats(parsed)
     right = _snap(right, beats)
     left = _snap(left, beats)
     if not right and not left:
-        raise MidiScoreError("这个 MIDI 里没有找到音符。")
+        raise MidiScoreError(t("midi_no_notes"))
     longest = max((end for hand in (right, left) for _start, end, _midi in hand), default=0)
     if math_ceil_measures(longest, beats) > MAX_MEASURES:
-        raise MidiScoreError("这首太长了。请选 160 个小节以内的 MIDI。")
+        raise MidiScoreError(t("midi_too_long"))
     return quarters_to_score(right, left, title, _bpm(parsed), beats, GRID)
 
 
@@ -57,7 +59,7 @@ def _parse(data: bytes):
         try:
             parsed = converter.parse(str(path), format="midi")
         except Exception as exc:
-            raise MidiScoreError("这个 MIDI 读不出来。请换一个 .mid 文件。") from exc
+            raise MidiScoreError(t("midi_unreadable")) from exc
     finally:
         path.unlink(missing_ok=True)
     if isinstance(parsed, stream.Score):

@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+
 const LETTERS = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
 const SOLFEGE = ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"];
 
@@ -27,8 +29,8 @@ export function pitchLabel(name: string): string {
   let solfege = SOLFEGE[index] ?? "";
   if (accidental === "♯" || accidental === "#") solfege += "♯";
   if (accidental === "♭" || accidental === "b" || accidental === "-") solfege += "♭";
-  const central = name === "C4" ? "，中央 C" : "";
-  return `${name}（${solfege}）${central}`;
+  const middle = name === "C4" ? t("middleC") : "";
+  return t("pitchZh", { name, solfege, middle });
 }
 
 export interface Jianpu {
